@@ -247,6 +247,10 @@
   "terminalPasteConfirmBody": "Multi-line text runs each line as soon as it is pasted.",
   "terminalCopySelection": "Copy",
   "terminalTabs": "Terminals",
+  "terminalSwitched": "Switched to {name}",
+  "@terminalSwitched": {
+    "placeholders": { "name": { "type": "String" } }
+  },
   "terminalNoTabs": "No terminals open",
   "terminalCloseTab": "Close terminal",
   "terminalCloseTabConfirm": "Close this terminal? A direct session ends; a persistent one keeps running on the computer.",

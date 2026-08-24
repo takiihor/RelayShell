@@ -13,6 +13,7 @@ import '../../shared/widgets/common.dart';
 import 'accessory_keyboard.dart';
 import 'terminal_providers.dart';
 import 'terminal_session.dart';
+import 'two_finger_swipe_detector.dart';
 
 /// The interactive terminal (SPEC 10).
 ///
@@ -56,6 +57,22 @@ class _TerminalScreenState extends ConsumerState<TerminalScreen> {
       await wakeLock.release();
     }
     _wakeLockHeld = wanted;
+  }
+
+  void _switchTerminal(TwoFingerSwipeDirection direction) {
+    final next = ref
+        .read(terminalManagerProvider)
+        .moveActive(forward: direction == TwoFingerSwipeDirection.left);
+    if (next == null) return;
+
+    if (ref.read(preferencesProvider).hapticFeedback) {
+      HapticFeedback.selectionClick();
+    }
+    showMessage(
+      context,
+      AppLocalizations.of(context).terminalSwitched(next.title),
+    );
+    context.pushReplacement('${Routes.terminal}?session=${next.id}');
   }
 
   @override
@@ -115,30 +132,33 @@ class _TerminalScreenState extends ConsumerState<TerminalScreen> {
               onClose: () => setState(() => _searching = false),
             ),
           Expanded(
-            child: TerminalView(
-              session.terminal,
-              controller: session.controller,
-              scrollController: _scrollController,
-              focusNode: _focusNode,
-              autofocus: true,
-              theme: namedTheme.theme,
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-              textStyle: TerminalStyle(
-                fontSize: preferences.terminalFontSize,
-                fontFamily: preferences.terminalFontFamily,
-                fontFamilyFallback: TerminalFonts.fallbacks,
+            child: TwoFingerSwipeDetector(
+              onSwipe: _switchTerminal,
+              child: TerminalView(
+                session.terminal,
+                controller: session.controller,
+                scrollController: _scrollController,
+                focusNode: _focusNode,
+                autofocus: true,
+                theme: namedTheme.theme,
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                textStyle: TerminalStyle(
+                  fontSize: preferences.terminalFontSize,
+                  fontFamily: preferences.terminalFontFamily,
+                  fontFamilyFallback: TerminalFonts.fallbacks,
+                ),
+                cursorType: switch (preferences.cursorStyle) {
+                  TerminalCursorStyle.block => TerminalCursorType.block,
+                  TerminalCursorStyle.underline => TerminalCursorType.underline,
+                  TerminalCursorStyle.bar => TerminalCursorType.verticalBar,
+                },
+                // Mobile IMEs often do not emit a hardware delete event, so the
+                // workaround is on by default here (SPEC 10.1).
+                deleteDetection: true,
+                onSecondaryTapDown: (details, offset) =>
+                    _showSelectionMenu(context, session),
+                readOnly: !session.isLive,
               ),
-              cursorType: switch (preferences.cursorStyle) {
-                TerminalCursorStyle.block => TerminalCursorType.block,
-                TerminalCursorStyle.underline => TerminalCursorType.underline,
-                TerminalCursorStyle.bar => TerminalCursorType.verticalBar,
-              },
-              // Mobile IMEs often do not emit a hardware delete event, so the
-              // workaround is on by default here (SPEC 10.1).
-              deleteDetection: true,
-              onSecondaryTapDown: (details, offset) =>
-                  _showSelectionMenu(context, session),
-              readOnly: !session.isLive,
             ),
           ),
           AccessoryKeyboard(
@@ -282,11 +302,10 @@ class _TerminalAppBar extends ConsumerWidget implements PreferredSizeWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
-    final manager = ref.watch(terminalManagerProvider);
 
     return AppBar(
       title: InkWell(
-        onTap: manager.length > 1 ? () => _showSwitcher(context, ref) : null,
+        onTap: () => _showSwitcher(context, ref),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -310,7 +329,7 @@ class _TerminalAppBar extends ConsumerWidget implements PreferredSizeWidget {
                 ],
               ),
             ),
-            if (manager.length > 1) const Icon(Icons.arrow_drop_down),
+            const Icon(Icons.arrow_drop_down),
           ],
         ),
       ),
@@ -461,7 +480,7 @@ class _TerminalAppBar extends ConsumerWidget implements PreferredSizeWidget {
     await showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
-      builder: (context) => SafeArea(
+      builder: (sheetContext) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -470,7 +489,7 @@ class _TerminalAppBar extends ConsumerWidget implements PreferredSizeWidget {
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
               child: Text(
                 l10n.terminalTabs,
-                style: Theme.of(context).textTheme.titleMedium,
+                style: Theme.of(sheetContext).textTheme.titleMedium,
               ),
             ),
             for (final tab in manager.tabs)
@@ -486,17 +505,28 @@ class _TerminalAppBar extends ConsumerWidget implements PreferredSizeWidget {
                   tooltip: l10n.terminalCloseTab,
                   onPressed: () async {
                     await manager.close(tab.id);
-                    if (context.mounted) Navigator.of(context).pop();
+                    if (sheetContext.mounted) {
+                      Navigator.of(sheetContext).pop();
+                    }
                   },
                 ),
                 onTap: () {
                   manager.setActive(tab.id);
-                  Navigator.of(context).pop();
+                  Navigator.of(sheetContext).pop();
                   context.pushReplacement(
                     '${Routes.terminal}?session=${tab.id}',
                   );
                 },
               ),
+            const Divider(height: 1),
+            ListTile(
+              leading: const Icon(Icons.dashboard_outlined),
+              title: Text(l10n.sessionsTitle),
+              onTap: () {
+                Navigator.of(sheetContext).pop();
+                context.go(Routes.sessions);
+              },
+            ),
           ],
         ),
       ),

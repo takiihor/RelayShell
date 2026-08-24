@@ -87,6 +87,24 @@ class TerminalManager extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Moves to the adjacent open terminal, wrapping at either end.
+  ///
+  /// Returning the selected terminal lets a UI update its route without
+  /// exposing the tab-ordering details that make the switch safe.
+  TerminalSession? moveActive({required bool forward}) {
+    if (_tabs.length < 2) return null;
+    final activeId = _activeId;
+    if (activeId == null) return null;
+    final currentIndex = _tabs.indexWhere((tab) => tab.id == activeId);
+    if (currentIndex < 0) return null;
+
+    final nextIndex = (currentIndex + (forward ? 1 : -1)) % _tabs.length;
+    final wrappedIndex = nextIndex < 0 ? nextIndex + _tabs.length : nextIndex;
+    final next = _tabs[wrappedIndex];
+    setActive(next.id);
+    return next;
+  }
+
   /// Opens a terminal and starts it.
   Future<TerminalSession> open({
     required Host host,

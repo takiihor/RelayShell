@@ -657,6 +657,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get terminalTabs => 'Terminals';
 
   @override
+  String terminalSwitched(String name) {
+    return 'Switched to $name';
+  }
+
+  @override
   String get terminalNoTabs => 'No terminals open';
 
   @override

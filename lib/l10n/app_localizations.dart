@@ -1294,6 +1294,12 @@ abstract class AppLocalizations {
   /// **'Terminals'**
   String get terminalTabs;
 
+  /// No description provided for @terminalSwitched.
+  ///
+  /// In en, this message translates to:
+  /// **'Switched to {name}'**
+  String terminalSwitched(String name);
+
   /// No description provided for @terminalNoTabs.
   ///
   /// In en, this message translates to:

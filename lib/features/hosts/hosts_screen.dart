@@ -22,6 +22,11 @@ class HostsScreen extends ConsumerWidget {
         title: Text(l10n.computersTitle),
         actions: [
           IconButton(
+            icon: const Icon(Icons.add),
+            tooltip: l10n.computersAdd,
+            onPressed: () => context.push(Routes.hostNew),
+          ),
+          IconButton(
             icon: const Icon(Icons.search),
             tooltip: l10n.actionSearch,
             onPressed: () => context.push(Routes.search),

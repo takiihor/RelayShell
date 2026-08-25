@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../app/providers.dart';
-import '../../app/router/app_router.dart';
+import '../../core/providers.dart';
+import '../../shared/navigation/routes.dart';
 import '../../core/platform/wake_on_lan.dart';
 import '../../l10n/app_localizations.dart';
 import '../../shared/models/models.dart';
@@ -27,11 +27,12 @@ class HostCard extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
 
-    final connectionStatus =
-        ref.watch(hostConnectionStatusProvider(host.id)).valueOrNull;
+    final connectionStatus = ref
+        .watch(hostConnectionStatusProvider(host.id))
+        .value;
     final reachability = ref.watch(hostReachabilityProvider(host.id));
     final isConnected = connectionStatus?.state == SshConnectionState.connected;
-    final wol = ref.watch(wolProfileProvider(host.id)).valueOrNull;
+    final wol = ref.watch(wolProfileProvider(host.id)).value;
 
     return Card(
       child: InkWell(
@@ -80,8 +81,7 @@ class HostCard extends ConsumerWidget {
                       ],
                     ),
                   ),
-                  if (showActions)
-                    _HostOverflowMenu(host: host, wol: wol),
+                  if (showActions) _HostOverflowMenu(host: host, wol: wol),
                 ],
               ),
               const SizedBox(height: 10),
@@ -159,7 +159,9 @@ class _HostAvatar extends StatelessWidget {
       ),
       alignment: Alignment.center,
       child: Icon(
-        host.platform.isWindows ? Icons.desktop_windows_outlined : Icons.dns_outlined,
+        host.platform.isWindows
+            ? Icons.desktop_windows_outlined
+            : Icons.dns_outlined,
         size: 20,
         color: theme.colorScheme.onPrimaryContainer,
       ),

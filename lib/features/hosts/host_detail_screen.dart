@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:uuid/uuid.dart';
 
-import '../../app/providers.dart';
-import '../../app/router/app_router.dart';
+import '../../core/providers.dart';
+import '../../shared/navigation/routes.dart';
 import '../../core/platform/wake_on_lan.dart';
 import '../../l10n/app_localizations.dart';
 import '../../shared/models/models.dart';
@@ -60,16 +60,19 @@ class _HostDetailView extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
-    final status = ref.watch(hostConnectionStatusProvider(host.id)).valueOrNull;
-    final projects = ref.watch(projectsForHostProvider(host.id)).valueOrNull ?? const [];
-    final sessions = ref.watch(sessionsForHostProvider(host.id)).valueOrNull ?? const [];
-    final commands = ref
+    final status = ref.watch(hostConnectionStatusProvider(host.id)).value;
+    final projects =
+        ref.watch(projectsForHostProvider(host.id)).value ?? const [];
+    final sessions =
+        ref.watch(sessionsForHostProvider(host.id)).value ?? const [];
+    final commands =
+        ref
             .watch(scopedCommandsProvider(CommandScopeQuery(hostId: host.id)))
-            .valueOrNull ??
+            .value ??
         const [];
     final forwards =
-        ref.watch(forwardProfilesForHostProvider(host.id)).valueOrNull ?? const [];
-    final wol = ref.watch(wolProfileProvider(host.id)).valueOrNull;
+        ref.watch(forwardProfilesForHostProvider(host.id)).value ?? const [];
+    final wol = ref.watch(wolProfileProvider(host.id)).value;
 
     return Scaffold(
       appBar: AppBar(
@@ -87,7 +90,10 @@ class _HostDetailView extends ConsumerWidget {
                 value: 'new-terminal',
                 child: Text(l10n.computerNewTerminal),
               ),
-              PopupMenuItem(value: 'duplicate', child: Text(l10n.actionDuplicate)),
+              PopupMenuItem(
+                value: 'duplicate',
+                child: Text(l10n.actionDuplicate),
+              ),
               if (status?.state == SshConnectionState.connected)
                 PopupMenuItem(
                   value: 'disconnect',
@@ -111,8 +117,9 @@ class _HostDetailView extends ConsumerWidget {
                   children: [
                     Text(
                       host.displaySubtitle,
-                      style: theme.textTheme.bodyMedium
-                          ?.copyWith(fontFamily: 'monospace'),
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontFamily: 'monospace',
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Text(
@@ -311,7 +318,9 @@ class _HostDetailView extends ConsumerWidget {
         await openAdditionalHostTerminal(context, ref, host);
       case 'duplicate':
         final now = DateTime.now();
-        await ref.read(hostsRepositoryProvider).upsert(
+        await ref
+            .read(hostsRepositoryProvider)
+            .upsert(
               Host(
                 id: const Uuid().v4(),
                 name: '${host.name} (${l10n.computerDuplicateSuffix})',

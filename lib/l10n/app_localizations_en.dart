@@ -10,7 +10,7 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
-  String get appTitle => 'Remote Dev Console';
+  String get appTitle => 'RelayShell';
 
   @override
   String get appShortTitle => 'RelayShell';
@@ -1501,7 +1501,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get searchSectionSessions => 'Sessions';
 
   @override
-  String get lockTitle => 'Remote Dev Console is locked';
+  String get lockTitle => 'RelayShell is locked';
 
   @override
   String get lockBody => 'Authenticate to continue.';

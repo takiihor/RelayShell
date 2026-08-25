@@ -22,10 +22,13 @@ void main() {
       expect(Fingerprint.normalize('SHA256:abc123'), 'SHA256:abc123');
     });
 
-    test('strips base64 padding so padded and unpadded forms compare equal', () {
-      expect(Fingerprint.normalize('SHA256:abc='), 'SHA256:abc');
-      expect(Fingerprint.normalize('SHA256:abc=='), 'SHA256:abc');
-    });
+    test(
+      'strips base64 padding so padded and unpadded forms compare equal',
+      () {
+        expect(Fingerprint.normalize('SHA256:abc='), 'SHA256:abc');
+        expect(Fingerprint.normalize('SHA256:abc=='), 'SHA256:abc');
+      },
+    );
 
     test('trims surrounding whitespace', () {
       expect(Fingerprint.normalize('  SHA256:abc  '), 'SHA256:abc');
@@ -59,8 +62,10 @@ void main() {
     test('returns null for text that is not a key', () {
       expect(Fingerprint.ofAuthorizedKeyLine('not a key'), isNull);
       expect(Fingerprint.ofAuthorizedKeyLine(''), isNull);
-      expect(Fingerprint.ofAuthorizedKeyLine('ssh-ed25519 !!!not-base64!!!'),
-          isNull);
+      expect(
+        Fingerprint.ofAuthorizedKeyLine('ssh-ed25519 !!!not-base64!!!'),
+        isNull,
+      );
     });
   });
 

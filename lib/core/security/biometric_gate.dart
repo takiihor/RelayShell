@@ -28,7 +28,7 @@ enum BiometricResult {
 ///   leaving the user stuck against a prompt that will never succeed.
 class BiometricGate {
   BiometricGate({LocalAuthentication? auth})
-      : _auth = auth ?? LocalAuthentication();
+    : _auth = auth ?? LocalAuthentication();
 
   final LocalAuthentication _auth;
 
@@ -68,7 +68,7 @@ class BiometricGate {
   /// Prompts for device authentication.
   ///
   /// [reason] is shown by the platform dialog and should name the specific
-  /// action, e.g. "Unlock Remote Dev Console" or "Use the key for Home PC".
+  /// action, e.g. "Unlock RelayShell" or "Use the key for Home PC".
   ///
   /// Device credential (PIN/pattern/passcode) is allowed as a fallback so that
   /// a user whose fingerprint sensor is failing is not locked out of their own
@@ -89,8 +89,7 @@ class BiometricGate {
         LocalAuthExceptionCode.biometricHardwareTemporarilyUnavailable =>
           BiometricResult.unavailable,
         LocalAuthExceptionCode.temporaryLockout ||
-        LocalAuthExceptionCode.biometricLockout =>
-          BiometricResult.lockedOut,
+        LocalAuthExceptionCode.biometricLockout => BiometricResult.lockedOut,
         _ => BiometricResult.failed,
       };
     } on PlatformException {

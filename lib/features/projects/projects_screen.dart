@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../app/providers.dart';
-import '../../app/router/app_router.dart';
+import '../../core/providers.dart';
+import '../../shared/navigation/routes.dart';
 import '../../l10n/app_localizations.dart';
 import '../../shared/models/models.dart';
 import '../../shared/utilities/formatting.dart';
@@ -18,7 +18,7 @@ class ProjectsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final projects = ref.watch(projectsProvider);
-    final hosts = ref.watch(hostsProvider).valueOrNull ?? const [];
+    final hosts = ref.watch(hostsProvider).value ?? const [];
 
     return Scaffold(
       appBar: AppBar(
@@ -31,7 +31,7 @@ class ProjectsScreen extends ConsumerWidget {
           ),
         ],
       ),
-      floatingActionButton: projects.valueOrNull?.isEmpty ?? true
+      floatingActionButton: projects.value?.isEmpty ?? true
           ? null
           : FloatingActionButton(
               heroTag: 'add-project',
@@ -56,8 +56,7 @@ class ProjectsScreen extends ConsumerWidget {
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
             itemCount: list.length,
             separatorBuilder: (_, _) => const SizedBox(height: 8),
-            itemBuilder: (context, index) =>
-                _ProjectCard(project: list[index]),
+            itemBuilder: (context, index) => _ProjectCard(project: list[index]),
           );
         },
       ),
@@ -87,7 +86,7 @@ class _ProjectCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
-    final host = ref.watch(hostProvider(project.hostId)).valueOrNull;
+    final host = ref.watch(hostProvider(project.hostId)).value;
 
     return Card(
       child: InkWell(

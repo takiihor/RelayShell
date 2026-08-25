@@ -30,8 +30,12 @@ class ForwardsRepository extends Repository {
       watch(() => forHost(hostId));
 
   Future<PortForwardProfile?> byId(String id) async {
-    final rows =
-        await db.query(table, where: 'id = ?', whereArgs: [id], limit: 1);
+    final rows = await db.query(
+      table,
+      where: 'id = ?',
+      whereArgs: [id],
+      limit: 1,
+    );
     if (rows.isEmpty) return null;
     return PortForwardProfile.fromRow(rows.first);
   }

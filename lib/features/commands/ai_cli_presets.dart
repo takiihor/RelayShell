@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
-import '../../app/providers.dart';
+import '../../core/providers.dart';
 import '../../l10n/app_localizations.dart';
 import '../../shared/models/models.dart';
 import '../../shared/widgets/common.dart';
@@ -116,17 +116,17 @@ class CommandPresets {
 
   /// The localised label for a preset.
   static String labelFor(AppLocalizations l10n, String id) => switch (id) {
-        'codex' => l10n.presetCodex,
-        'claude' => l10n.presetClaudeCode,
-        'gemini' => l10n.presetGeminiCli,
-        'git_status' => l10n.presetGitStatus,
-        'git_pull' => l10n.presetGitPull,
-        'dev_server' => l10n.presetStartDevServer,
-        'docker_ps' => l10n.presetDockerPs,
-        'disk_usage' => l10n.presetDiskUsage,
-        'system_status' => l10n.presetSystemStatus,
-        _ => l10n.presetCustomCli,
-      };
+    'codex' => l10n.presetCodex,
+    'claude' => l10n.presetClaudeCode,
+    'gemini' => l10n.presetGeminiCli,
+    'git_status' => l10n.presetGitStatus,
+    'git_pull' => l10n.presetGitPull,
+    'dev_server' => l10n.presetStartDevServer,
+    'docker_ps' => l10n.presetDockerPs,
+    'disk_usage' => l10n.presetDiskUsage,
+    'system_status' => l10n.presetSystemStatus,
+    _ => l10n.presetCustomCli,
+  };
 }
 
 /// Offers presets to add as actions for a project or host (SPEC 14).
@@ -160,8 +160,8 @@ Future<void> offerAiCliPresets(
               child: Text(
                 l10n.presetsAiNote,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
             ),
             for (final group in [
@@ -193,10 +193,12 @@ Future<void> offerAiCliPresets(
   final scope = project != null
       ? CommandScope.project
       : host != null
-          ? CommandScope.host
-          : CommandScope.global;
+      ? CommandScope.host
+      : CommandScope.global;
 
-  await ref.read(commandsRepositoryProvider).upsert(
+  await ref
+      .read(commandsRepositoryProvider)
+      .upsert(
         SavedCommand(
           id: const Uuid().v4(),
           name: CommandPresets.labelFor(l10n, selected.id),

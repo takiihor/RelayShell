@@ -4,24 +4,36 @@ import 'package:relayshell/core/platform/wake_on_lan.dart';
 void main() {
   group('parseMac', () {
     test('accepts colon-separated', () {
-      expect(
-        WakeOnLan.parseMac('00:1A:2B:3C:4D:5E'),
-        [0x00, 0x1A, 0x2B, 0x3C, 0x4D, 0x5E],
-      );
+      expect(WakeOnLan.parseMac('00:1A:2B:3C:4D:5E'), [
+        0x00,
+        0x1A,
+        0x2B,
+        0x3C,
+        0x4D,
+        0x5E,
+      ]);
     });
 
     test('accepts dash-separated and lower case', () {
-      expect(
-        WakeOnLan.parseMac('00-1a-2b-3c-4d-5e'),
-        [0x00, 0x1A, 0x2B, 0x3C, 0x4D, 0x5E],
-      );
+      expect(WakeOnLan.parseMac('00-1a-2b-3c-4d-5e'), [
+        0x00,
+        0x1A,
+        0x2B,
+        0x3C,
+        0x4D,
+        0x5E,
+      ]);
     });
 
     test('accepts bare hex', () {
-      expect(
-        WakeOnLan.parseMac('001a2b3c4d5e'),
-        [0x00, 0x1A, 0x2B, 0x3C, 0x4D, 0x5E],
-      );
+      expect(WakeOnLan.parseMac('001a2b3c4d5e'), [
+        0x00,
+        0x1A,
+        0x2B,
+        0x3C,
+        0x4D,
+        0x5E,
+      ]);
     });
 
     test('rejects the wrong length', () {
@@ -43,10 +55,7 @@ void main() {
     });
 
     test('rejects empty input', () {
-      expect(
-        () => WakeOnLan.parseMac(''),
-        throwsA(isA<WakeOnLanException>()),
-      );
+      expect(() => WakeOnLan.parseMac(''), throwsA(isA<WakeOnLanException>()));
     });
   });
 

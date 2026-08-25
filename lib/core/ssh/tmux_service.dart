@@ -8,8 +8,8 @@ class TmuxAvailability {
   const TmuxAvailability({required this.available, this.version, this.reason});
 
   const TmuxAvailability.unavailable(this.reason)
-      : available = false,
-        version = null;
+    : available = false,
+      version = null;
 
   final bool available;
 

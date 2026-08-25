@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:relayshell/app/app.dart';
-import 'package:relayshell/app/providers.dart';
+import 'package:relayshell/core/providers.dart';
 import 'package:relayshell/core/bootstrap.dart';
 import 'package:relayshell/core/storage/secret_store.dart';
 import 'package:relayshell/l10n/app_localizations.dart';
@@ -25,13 +25,13 @@ void main() {
   late AppServices services;
 
   Future<AppServices> startServices() => AppServices.start(
-        databasePath: inMemoryDatabasePath,
-        secretStore: InMemorySecretStore(),
-        databaseFactory: databaseFactoryFfiNoIsolate,
-        promptForHostKey: (_) async => false,
-        promptForSecret: (_) async => null,
-        promptForKeyboardInteractive: (_) async => null,
-      );
+    databasePath: inMemoryDatabasePath,
+    secretStore: InMemorySecretStore(),
+    databaseFactory: databaseFactoryFfiNoIsolate,
+    promptForHostKey: (_) async => false,
+    promptForSecret: (_) async => null,
+    promptForKeyboardInteractive: (_) async => null,
+  );
 
   Future<void> pumpApp(WidgetTester tester) async {
     await tester.pumpWidget(
@@ -131,8 +131,9 @@ void main() {
     expect(hosts.single.name, 'Home PC');
   });
 
-  testWidgets('the host form refuses to save without required fields',
-      (tester) async {
+  testWidgets('the host form refuses to save without required fields', (
+    tester,
+  ) async {
     await pumpApp(tester);
     final l10n = await AppLocalizations.delegate.load(const Locale('en'));
 
@@ -188,8 +189,9 @@ void main() {
     expect(find.text('df -h'), findsOneWidget);
   });
 
-  testWidgets('a favourited command shows as a Home quick action',
-      (tester) async {
+  testWidgets('a favourited command shows as a Home quick action', (
+    tester,
+  ) async {
     final now = DateTime.now();
     await services.commands.upsert(
       SavedCommand(
@@ -222,8 +224,9 @@ void main() {
     expect(find.text('Git Status'), findsOneWidget);
   });
 
-  testWidgets('changing the theme setting takes effect immediately',
-      (tester) async {
+  testWidgets('changing the theme setting takes effect immediately', (
+    tester,
+  ) async {
     await pumpApp(tester);
     final l10n = await AppLocalizations.delegate.load(const Locale('en'));
 

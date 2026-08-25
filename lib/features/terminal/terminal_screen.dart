@@ -4,9 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:xterm/xterm.dart';
 
-import '../../app/providers.dart';
-import '../../app/router/app_router.dart';
-import '../../app/theme/terminal_themes.dart';
+import '../../core/providers.dart';
+import '../../shared/navigation/routes.dart';
+import '../../shared/theme/terminal_themes.dart';
 import '../../l10n/app_localizations.dart';
 import '../../shared/models/models.dart';
 import '../../shared/widgets/common.dart';

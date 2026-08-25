@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../app/providers.dart';
-import '../../app/router/app_router.dart';
+import '../../core/providers.dart';
+import '../../shared/navigation/routes.dart';
 import '../../l10n/app_localizations.dart';
 import '../../shared/widgets/common.dart';
 import 'host_card.dart';
@@ -33,7 +33,7 @@ class HostsScreen extends ConsumerWidget {
           ),
         ],
       ),
-      floatingActionButton: hosts.valueOrNull?.isEmpty ?? true
+      floatingActionButton: hosts.value?.isEmpty ?? true
           ? null
           : FloatingActionButton(
               heroTag: 'add-host',

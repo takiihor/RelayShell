@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../app/providers.dart';
-import '../../app/router/app_router.dart';
+import '../../core/providers.dart';
+import '../../shared/navigation/routes.dart';
 import '../../l10n/app_localizations.dart';
 import '../../shared/models/models.dart';
 import '../../shared/utilities/formatting.dart';
@@ -58,8 +58,9 @@ class _ProjectDetailView extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
-    final host = ref.watch(hostProvider(project.hostId)).valueOrNull;
-    final commands = ref
+    final host = ref.watch(hostProvider(project.hostId)).value;
+    final commands =
+        ref
             .watch(
               scopedCommandsProvider(
                 CommandScopeQuery(
@@ -68,7 +69,7 @@ class _ProjectDetailView extends ConsumerWidget {
                 ),
               ),
             )
-            .valueOrNull ??
+            .value ??
         const [];
 
     return Scaffold(

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../app/providers.dart';
+import '../../core/providers.dart';
 import '../../core/security/fingerprint.dart';
 import '../../l10n/app_localizations.dart';
 import '../../shared/utilities/formatting.dart';

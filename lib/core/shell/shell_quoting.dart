@@ -49,10 +49,10 @@ abstract class ShellQuoter {
   static const ShellQuoter cmd = WindowsCmdQuoter();
 
   static ShellQuoter forPlatform(RemotePlatform platform) => switch (platform) {
-        RemotePlatform.posix => posix,
-        RemotePlatform.windowsPowerShell => powerShell,
-        RemotePlatform.windowsCmd => cmd,
-      };
+    RemotePlatform.posix => posix,
+    RemotePlatform.windowsPowerShell => powerShell,
+    RemotePlatform.windowsCmd => cmd,
+  };
 }
 
 /// POSIX `sh`/`bash`/`zsh` quoting.
@@ -99,8 +99,7 @@ class PowerShellQuoter extends ShellQuoter {
       'Set-Location -LiteralPath ${quote(path)}';
 
   @override
-  String andThen(String first, String second) =>
-      '$first; if (\$?) { $second }';
+  String andThen(String first, String second) => '$first; if (\$?) { $second }';
 }
 
 /// cmd.exe quoting.

@@ -23,7 +23,9 @@ String formatRelativeTime(AppLocalizations l10n, DateTime? time) {
   final difference = DateTime.now().difference(time);
 
   if (difference.inSeconds < 60) return l10n.timeJustNow;
-  if (difference.inMinutes < 60) return l10n.timeMinutesAgo(difference.inMinutes);
+  if (difference.inMinutes < 60) {
+    return l10n.timeMinutesAgo(difference.inMinutes);
+  }
   if (difference.inHours < 24) return l10n.timeHoursAgo(difference.inHours);
   if (difference.inDays == 1) return l10n.timeYesterday;
   if (difference.inDays < 30) return l10n.timeDaysAgo(difference.inDays);

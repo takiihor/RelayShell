@@ -32,8 +32,12 @@ class CredentialsRepository extends Repository {
   }
 
   Future<Credential?> byId(String id) async {
-    final rows =
-        await db.query(table, where: 'id = ?', whereArgs: [id], limit: 1);
+    final rows = await db.query(
+      table,
+      where: 'id = ?',
+      whereArgs: [id],
+      limit: 1,
+    );
     if (rows.isEmpty) return null;
     return Credential.fromRow(rows.first);
   }

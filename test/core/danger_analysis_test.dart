@@ -72,8 +72,10 @@ void main() {
     ];
 
     for (final command in safe) {
-      test('allows: ${command.trim().isEmpty ? '(blank)' : command}',
-          () => expect(flags(command), isFalse));
+      test(
+        'allows: ${command.trim().isEmpty ? '(blank)' : command}',
+        () => expect(flags(command), isFalse),
+      );
     }
   });
 

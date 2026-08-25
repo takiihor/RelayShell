@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../app/providers.dart';
-import '../../app/router/app_router.dart';
+import '../../core/providers.dart';
+import '../../shared/navigation/routes.dart';
 import '../../core/platform/device_services.dart';
 import '../../l10n/app_localizations.dart';
 import '../../shared/models/models.dart';
@@ -37,7 +37,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   /// Deliberately not on a timer and not for every saved host: Home must not
   /// start dozens of network checks (SPEC 7.2, 36).
   Future<void> _refreshVisibleHosts() async {
-    final hosts = ref.read(recentHostsProvider).valueOrNull;
+    final hosts = ref.read(recentHostsProvider).value;
     if (hosts == null) return;
     final probe = ref.read(reachabilityProbeProvider);
     for (final host in hosts.take(3)) {
@@ -82,7 +82,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               padding: const EdgeInsets.only(bottom: 96),
               children: [
                 const _ContinueSection(),
-                _ComputersSection(hosts: hosts.valueOrNull ?? const []),
+                _ComputersSection(hosts: hosts.value ?? const []),
                 const _ProjectsSection(),
                 const _QuickActionsSection(),
               ],
@@ -101,7 +101,7 @@ class _ContinueSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
-    final sessions = ref.watch(recentSessionsProvider).valueOrNull ?? const [];
+    final sessions = ref.watch(recentSessionsProvider).value ?? const [];
     if (sessions.isEmpty) return const SizedBox.shrink();
 
     return Column(
@@ -131,7 +131,7 @@ class _ContinueCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
-    final host = ref.watch(hostProvider(session.hostId)).valueOrNull;
+    final host = ref.watch(hostProvider(session.hostId)).value;
 
     final subtitleParts = <String>[
       if (host != null) host.name,
@@ -228,7 +228,7 @@ class _ProjectsSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
-    final projects = ref.watch(recentProjectsProvider).valueOrNull ?? const [];
+    final projects = ref.watch(recentProjectsProvider).value ?? const [];
     if (projects.isEmpty) return const SizedBox.shrink();
 
     return Column(
@@ -248,13 +248,12 @@ class _ProjectsSection extends ConsumerWidget {
             separatorBuilder: (_, _) => const SizedBox(width: 8),
             itemBuilder: (context, index) {
               final project = projects[index];
-              final host = ref.watch(hostProvider(project.hostId)).valueOrNull;
+              final host = ref.watch(hostProvider(project.hostId)).value;
               return SizedBox(
                 width: 220,
                 child: Card(
                   child: InkWell(
-                    onTap: () =>
-                        context.go(Routes.projectDetail(project.id)),
+                    onTap: () => context.go(Routes.projectDetail(project.id)),
                     child: Padding(
                       padding: const EdgeInsets.all(12),
                       child: Column(
@@ -315,7 +314,7 @@ class _QuickActionsSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
-    final commands = ref.watch(favoriteCommandsProvider).valueOrNull ?? const [];
+    final commands = ref.watch(favoriteCommandsProvider).value ?? const [];
     if (commands.isEmpty) return const SizedBox.shrink();
 
     return Column(

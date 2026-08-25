@@ -97,7 +97,7 @@ abstract class AppLocalizations {
   /// No description provided for @appTitle.
   ///
   /// In en, this message translates to:
-  /// **'Remote Dev Console'**
+  /// **'RelayShell'**
   String get appTitle;
 
   /// No description provided for @appShortTitle.
@@ -2801,7 +2801,7 @@ abstract class AppLocalizations {
   /// No description provided for @lockTitle.
   ///
   /// In en, this message translates to:
-  /// **'Remote Dev Console is locked'**
+  /// **'RelayShell is locked'**
   String get lockTitle;
 
   /// No description provided for @lockBody.

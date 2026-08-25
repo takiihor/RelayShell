@@ -25,7 +25,8 @@ class WakeOnLan {
   /// Accepts `AA:BB:CC:DD:EE:FF`, `aa-bb-cc-dd-ee-ff` and `aabbccddeeff`.
   static Uint8List parseMac(String mac) {
     final cleaned = mac.replaceAll(RegExp(r'[:\-.\s]'), '');
-    if (cleaned.length != 12 || !RegExp(r'^[0-9a-fA-F]{12}$').hasMatch(cleaned)) {
+    if (cleaned.length != 12 ||
+        !RegExp(r'^[0-9a-fA-F]{12}$').hasMatch(cleaned)) {
       throw const WakeOnLanException(
         'That does not look like a MAC address. '
         'Use a form like 00:1A:2B:3C:4D:5E.',

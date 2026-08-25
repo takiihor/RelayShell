@@ -116,9 +116,7 @@ void main() {
     });
 
     test('suggests a dated file name', () {
-      final name = ConfigTransfer.suggestedFileName(
-        now: DateTime(2026, 3, 7),
-      );
+      final name = ConfigTransfer.suggestedFileName(now: DateTime(2026, 3, 7));
       expect(name, 'relayshell-backup-20260307.json');
     });
   });
@@ -235,11 +233,36 @@ void main() {
       expect(summary.warnings, isNotEmpty);
     });
 
+    test(
+      'rolls back the entire import when a later record is invalid',
+      () async {
+        final json = jsonEncode({
+          'format': ConfigTransfer.formatName,
+          'version': 1,
+          'hosts': [
+            {
+              'id': 'host-1',
+              'name': 'Valid first host',
+              'hostname': 'example.com',
+              'username': 'dev',
+            },
+          ],
+          'wol_profiles': [
+            {'host_id': 'host-1', 'mac_address': 123},
+          ],
+        });
+
+        await expectLater(
+          transfer.import(json),
+          throwsA(isA<ConfigImportException>()),
+        );
+        expect(await hosts.all(), isEmpty);
+      },
+    );
+
     test('can skip preferences on request', () async {
       final repository = PreferencesRepository(database);
-      await repository.save(
-        const AppPreferences(themeMode: AppThemeMode.dark),
-      );
+      await repository.save(const AppPreferences(themeMode: AppThemeMode.dark));
 
       final json = jsonEncode({
         'format': ConfigTransfer.formatName,
@@ -252,6 +275,24 @@ void main() {
 
       await transfer.import(json);
       expect((await repository.load()).themeMode, AppThemeMode.light);
+    });
+
+    test('bounds imported preferences to the supported UI ranges', () async {
+      final json = jsonEncode({
+        'format': ConfigTransfer.formatName,
+        'version': 1,
+        'preferences': {
+          'scrollback_lines': '999999999',
+          'terminal_font_size': '-10',
+          'connect_timeout_seconds': '0',
+        },
+      });
+
+      await transfer.import(json);
+      final restored = await PreferencesRepository(database).load();
+      expect(restored.scrollbackLines, 20000);
+      expect(restored.terminalFontSize, 8);
+      expect(restored.connectTimeoutSeconds, 5);
     });
 
     test('tolerates a document with no collections at all', () async {

@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
-import '../../app/providers.dart';
+import '../../core/providers.dart';
 import '../../core/ssh/ssh_failure.dart';
 import '../../l10n/app_localizations.dart';
 import '../../shared/models/models.dart';
@@ -19,11 +19,11 @@ class ForwardingScreen extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final profiles = ref.watch(forwardProfilesProvider);
-    final hosts = ref.watch(hostsProvider).valueOrNull ?? const [];
+    final hosts = ref.watch(hostsProvider).value ?? const [];
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.forwardingTitle)),
-      floatingActionButton: profiles.valueOrNull?.isEmpty ?? true
+      floatingActionButton: profiles.value?.isEmpty ?? true
           ? null
           : FloatingActionButton(
               heroTag: 'add-forward',
@@ -90,8 +90,7 @@ class ForwardingScreen extends ConsumerWidget {
       context: context,
       isScrollControlled: true,
       showDragHandle: true,
-      builder: (context) =>
-          _ForwardEditSheet(hosts: hosts, existing: existing),
+      builder: (context) => _ForwardEditSheet(hosts: hosts, existing: existing),
     );
 
     if (result == null) return;
@@ -109,7 +108,7 @@ class _ForwardTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
-    final host = ref.watch(hostProvider(profile.hostId)).valueOrNull;
+    final host = ref.watch(hostProvider(profile.hostId)).value;
 
     ref.watch(activeForwardsProvider);
     final active = ref.read(forwardingServiceProvider).forProfile(profile.id);
@@ -188,7 +187,10 @@ class _ForwardTile extends ConsumerWidget {
                         ),
                 ),
                 const SizedBox(width: 8),
-                IconButton(icon: const Icon(Icons.edit_outlined), onPressed: onEdit),
+                IconButton(
+                  icon: const Icon(Icons.edit_outlined),
+                  onPressed: onEdit,
+                ),
                 IconButton(
                   icon: const Icon(Icons.delete_outline),
                   onPressed: () => _delete(context, ref),
@@ -204,8 +206,9 @@ class _ForwardTile extends ConsumerWidget {
   Future<void> _start(BuildContext context, WidgetRef ref, Host host) async {
     final l10n = AppLocalizations.of(context);
     try {
-      final connection =
-          await ref.read(connectionManagerProvider).connect(host);
+      final connection = await ref
+          .read(connectionManagerProvider)
+          .connect(host);
       final forward = await ref
           .read(forwardingServiceProvider)
           .start(connection, profile);
@@ -277,8 +280,9 @@ class _ForwardEditSheetState extends State<_ForwardEditSheet> {
       type: _type,
       listenPort: int.parse(_listenPort.text.trim()),
       listenAddress: existing?.listenAddress ?? '127.0.0.1',
-      targetHost:
-          _type == ForwardType.dynamicSocks ? null : _targetHost.text.trim(),
+      targetHost: _type == ForwardType.dynamicSocks
+          ? null
+          : _targetHost.text.trim(),
       targetPort: _type == ForwardType.dynamicSocks
           ? null
           : int.tryParse(_targetPort.text.trim()),
@@ -315,9 +319,8 @@ class _ForwardEditSheetState extends State<_ForwardEditSheet> {
               TextFormField(
                 controller: _name,
                 decoration: InputDecoration(labelText: l10n.forwardFieldName),
-                validator: (value) => (value?.trim().isEmpty ?? true)
-                    ? l10n.errorRequired
-                    : null,
+                validator: (value) =>
+                    (value?.trim().isEmpty ?? true) ? l10n.errorRequired : null,
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
@@ -367,8 +370,9 @@ class _ForwardEditSheetState extends State<_ForwardEditSheet> {
                 controller: _listenPort,
                 keyboardType: TextInputType.number,
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                decoration:
-                    InputDecoration(labelText: l10n.forwardFieldListenPort),
+                decoration: InputDecoration(
+                  labelText: l10n.forwardFieldListenPort,
+                ),
                 validator: _portValidator(l10n),
               ),
               if (needsTarget) ...[
@@ -376,8 +380,9 @@ class _ForwardEditSheetState extends State<_ForwardEditSheet> {
                 TextFormField(
                   controller: _targetHost,
                   autocorrect: false,
-                  decoration:
-                      InputDecoration(labelText: l10n.forwardFieldTargetHost),
+                  decoration: InputDecoration(
+                    labelText: l10n.forwardFieldTargetHost,
+                  ),
                   validator: (value) => (value?.trim().isEmpty ?? true)
                       ? l10n.errorRequired
                       : null,
@@ -387,8 +392,9 @@ class _ForwardEditSheetState extends State<_ForwardEditSheet> {
                   controller: _targetPort,
                   keyboardType: TextInputType.number,
                   inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                  decoration:
-                      InputDecoration(labelText: l10n.forwardFieldTargetPort),
+                  decoration: InputDecoration(
+                    labelText: l10n.forwardFieldTargetPort,
+                  ),
                   validator: _portValidator(l10n),
                 ),
               ],
@@ -402,10 +408,10 @@ class _ForwardEditSheetState extends State<_ForwardEditSheet> {
   }
 
   String? Function(String?) _portValidator(AppLocalizations l10n) => (value) {
-        final port = int.tryParse(value?.trim() ?? '');
-        if (port == null || port < 1 || port > 65535) {
-          return l10n.errorInvalidPort;
-        }
-        return null;
-      };
+    final port = int.tryParse(value?.trim() ?? '');
+    if (port == null || port < 1 || port > 65535) {
+      return l10n.errorInvalidPort;
+    }
+    return null;
+  };
 }

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../app/providers.dart';
+import '../../core/providers.dart';
 import '../../core/security/fingerprint.dart';
 import '../../l10n/app_localizations.dart';
 import '../../shared/models/models.dart';
@@ -19,7 +19,7 @@ class KeysScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.keysTitle)),
-      floatingActionButton: credentials.valueOrNull?.isEmpty ?? true
+      floatingActionButton: credentials.value?.isEmpty ?? true
           ? null
           : FloatingActionButton(
               heroTag: 'add-key',
@@ -131,7 +131,7 @@ class _CredentialSheet extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
-    final hostsUsing = ref.watch(hostsProvider).valueOrNull ?? const [];
+    final hostsUsing = ref.watch(hostsProvider).value ?? const [];
     final usageCount = hostsUsing
         .where((host) => host.credentialId == credential.id)
         .length;
@@ -195,8 +195,10 @@ class _CredentialSheet extends ConsumerWidget {
                 title: Text(l10n.keyRequireBiometric),
                 subtitle: Text(l10n.keyRequireBiometricHelp),
                 onChanged: (value) async {
-                  final available =
-                      await ref.read(appServicesProvider).biometrics.isAvailable;
+                  final available = await ref
+                      .read(appServicesProvider)
+                      .biometrics
+                      .isAvailable;
                   if (!context.mounted) return;
                   if (value && !available) {
                     showMessage(
@@ -206,9 +208,9 @@ class _CredentialSheet extends ConsumerWidget {
                     );
                     return;
                   }
-                  await ref.read(credentialsRepositoryProvider).upsert(
-                        credential.copyWith(requireBiometric: value),
-                      );
+                  await ref
+                      .read(credentialsRepositoryProvider)
+                      .upsert(credential.copyWith(requireBiometric: value));
                 },
               ),
               const SizedBox(height: 8),

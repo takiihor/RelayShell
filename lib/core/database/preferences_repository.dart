@@ -27,11 +27,10 @@ class PreferencesRepository extends Repository {
     final entries = preferences.toMap();
     await db.transaction((txn) async {
       for (final entry in entries.entries) {
-        await txn.insert(
-          table,
-          {'key': entry.key, 'value': entry.value},
-          conflictAlgorithm: ConflictAlgorithm.replace,
-        );
+        await txn.insert(table, {
+          'key': entry.key,
+          'value': entry.value,
+        }, conflictAlgorithm: ConflictAlgorithm.replace);
       }
     });
     notifyChanged();
@@ -89,7 +88,11 @@ class RecentsRepository extends Repository {
   Stream<List<RecentItem>> watchRecent({int limit = 12}) =>
       watch(() => recent(limit: limit));
 
-  Future<void> record(RecentItemKind kind, String targetId, {DateTime? at}) async {
+  Future<void> record(
+    RecentItemKind kind,
+    String targetId, {
+    DateTime? at,
+  }) async {
     await db.insert(
       table,
       RecentItem(

@@ -14,9 +14,9 @@ enum AuthMethod {
   final String storageValue;
 
   static AuthMethod fromStorage(String? value) => AuthMethod.values.firstWhere(
-        (e) => e.storageValue == value,
-        orElse: () => AuthMethod.privateKey,
-      );
+    (e) => e.storageValue == value,
+    orElse: () => AuthMethod.privateKey,
+  );
 }
 
 enum CredentialType {
@@ -165,13 +165,13 @@ enum SshConnectionState {
 
   /// True while the connection is working toward [connected].
   bool get isBusy => const {
-        SshConnectionState.resolving,
-        SshConnectionState.connecting,
-        SshConnectionState.handshaking,
-        SshConnectionState.verifyingHost,
-        SshConnectionState.authenticating,
-        SshConnectionState.reconnecting,
-      }.contains(this);
+    SshConnectionState.resolving,
+    SshConnectionState.connecting,
+    SshConnectionState.handshaking,
+    SshConnectionState.verifyingHost,
+    SshConnectionState.authenticating,
+    SshConnectionState.reconnecting,
+  }.contains(this);
 }
 
 /// Semantic status colours defined by the design system (SPEC 39).

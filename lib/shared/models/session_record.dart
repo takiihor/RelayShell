@@ -57,68 +57,67 @@ class SessionRecord {
     Object? launchCommandId = _unset,
     Object? launchCommand = _unset,
     DateTime? lastUsedAt,
-  }) =>
-      SessionRecord(
-        id: id,
-        hostId: hostId,
-        projectId: projectId == _unset ? this.projectId : projectId as String?,
-        tmuxSessionName: tmuxSessionName == _unset
-            ? this.tmuxSessionName
-            : tmuxSessionName as String?,
-        displayName: displayName ?? this.displayName,
-        mode: mode ?? this.mode,
-        workingDirectory: workingDirectory == _unset
-            ? this.workingDirectory
-            : workingDirectory as String?,
-        launchCommandId: launchCommandId == _unset
-            ? this.launchCommandId
-            : launchCommandId as String?,
-        launchCommand: launchCommand == _unset
-            ? this.launchCommand
-            : launchCommand as String?,
-        createdAt: createdAt,
-        lastUsedAt: lastUsedAt ?? DateTime.now(),
-      );
+  }) => SessionRecord(
+    id: id,
+    hostId: hostId,
+    projectId: projectId == _unset ? this.projectId : projectId as String?,
+    tmuxSessionName: tmuxSessionName == _unset
+        ? this.tmuxSessionName
+        : tmuxSessionName as String?,
+    displayName: displayName ?? this.displayName,
+    mode: mode ?? this.mode,
+    workingDirectory: workingDirectory == _unset
+        ? this.workingDirectory
+        : workingDirectory as String?,
+    launchCommandId: launchCommandId == _unset
+        ? this.launchCommandId
+        : launchCommandId as String?,
+    launchCommand: launchCommand == _unset
+        ? this.launchCommand
+        : launchCommand as String?,
+    createdAt: createdAt,
+    lastUsedAt: lastUsedAt ?? DateTime.now(),
+  );
 
   Map<String, Object?> toRow() => {
-        'id': id,
-        'host_id': hostId,
-        'project_id': projectId,
-        'tmux_session_name': tmuxSessionName,
-        'display_name': displayName,
-        'mode': mode.storageValue,
-        'working_directory': workingDirectory,
-        'launch_command_id': launchCommandId,
-        'launch_command': launchCommand,
-        'created_at': createdAt.millisecondsSinceEpoch,
-        'last_used_at': lastUsedAt.millisecondsSinceEpoch,
-      };
+    'id': id,
+    'host_id': hostId,
+    'project_id': projectId,
+    'tmux_session_name': tmuxSessionName,
+    'display_name': displayName,
+    'mode': mode.storageValue,
+    'working_directory': workingDirectory,
+    'launch_command_id': launchCommandId,
+    'launch_command': launchCommand,
+    'created_at': createdAt.millisecondsSinceEpoch,
+    'last_used_at': lastUsedAt.millisecondsSinceEpoch,
+  };
 
   factory SessionRecord.fromRow(Map<String, Object?> row) => SessionRecord(
-        id: row['id']! as String,
-        hostId: row['host_id']! as String,
-        projectId: row['project_id'] as String?,
-        tmuxSessionName: row['tmux_session_name'] as String?,
-        displayName: row['display_name']! as String,
-        mode: SessionMode.fromStorage(row['mode'] as String?),
-        workingDirectory: row['working_directory'] as String?,
-        launchCommandId: row['launch_command_id'] as String?,
-        launchCommand: row['launch_command'] as String?,
-        createdAt:
-            DateTime.fromMillisecondsSinceEpoch(row['created_at']! as int),
-        lastUsedAt:
-            DateTime.fromMillisecondsSinceEpoch(row['last_used_at']! as int),
-      );
+    id: row['id']! as String,
+    hostId: row['host_id']! as String,
+    projectId: row['project_id'] as String?,
+    tmuxSessionName: row['tmux_session_name'] as String?,
+    displayName: row['display_name']! as String,
+    mode: SessionMode.fromStorage(row['mode'] as String?),
+    workingDirectory: row['working_directory'] as String?,
+    launchCommandId: row['launch_command_id'] as String?,
+    launchCommand: row['launch_command'] as String?,
+    createdAt: DateTime.fromMillisecondsSinceEpoch(row['created_at']! as int),
+    lastUsedAt: DateTime.fromMillisecondsSinceEpoch(
+      row['last_used_at']! as int,
+    ),
+  );
 
   Map<String, Object?> toExportJson() => {
-        'id': id,
-        'host_id': hostId,
-        'project_id': projectId,
-        'tmux_session_name': tmuxSessionName,
-        'display_name': displayName,
-        'mode': mode.storageValue,
-        'working_directory': workingDirectory,
-      };
+    'id': id,
+    'host_id': hostId,
+    'project_id': projectId,
+    'tmux_session_name': tmuxSessionName,
+    'display_name': displayName,
+    'mode': mode.storageValue,
+    'working_directory': workingDirectory,
+  };
 
   @override
   bool operator ==(Object other) => other is SessionRecord && other.id == id;

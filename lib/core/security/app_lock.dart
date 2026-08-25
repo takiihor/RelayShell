@@ -98,19 +98,15 @@ class AppLock extends ChangeNotifier {
     if (_state == AppLockState.authenticating) return false;
 
     _setState(AppLockState.authenticating);
-    final result = await biometrics.authenticate('Unlock Remote Dev Console');
+    final result = await biometrics.authenticate('Unlock RelayShell');
 
     switch (result) {
       case BiometricResult.success:
         _setState(AppLockState.unlocked);
         return true;
       case BiometricResult.unavailable:
-        // Nothing is enrolled any more, so the lock can no longer be satisfied.
-        // Leaving the user permanently locked out of their own hosts would be
-        // worse than disabling a setting they can re-enable once a screen lock
-        // exists again.
-        _setState(AppLockState.unlocked);
-        return true;
+        _setState(AppLockState.locked);
+        return false;
       case BiometricResult.failed:
       case BiometricResult.lockedOut:
         _setState(AppLockState.locked);

@@ -57,7 +57,10 @@ class ClipboardGuard {
 
   Timer? _timer;
 
-  Future<void> copySensitive(String value, {required Duration clearAfter}) async {
+  Future<void> copySensitive(
+    String value, {
+    required Duration clearAfter,
+  }) async {
     await Clipboard.setData(ClipboardData(text: value));
     _timer?.cancel();
     if (clearAfter <= Duration.zero) return;

@@ -33,64 +33,66 @@ void main() {
   tearDown(() async => database.close());
 
   group('44.1 private keys are never stored in plain SQLite', () {
-    test('importing a key puts the private half only in secure storage',
-        () async {
-      final secrets = InMemorySecretStore();
-      final credentials = CredentialsRepository(database);
-      final generated = const SshKeyMaterial().generateEd25519();
-      final now = DateTime.now();
+    test(
+      'importing a key puts the private half only in secure storage',
+      () async {
+        final secrets = InMemorySecretStore();
+        final credentials = CredentialsRepository(database);
+        final generated = const SshKeyMaterial().generateEd25519();
+        final now = DateTime.now();
 
-      // The flow the UI performs on import.
-      await secrets.write(
-        SecretKind.privateKey,
-        'c1',
-        generated.privateKeyPem,
-      );
-      await credentials.upsert(
-        Credential(
-          id: 'c1',
-          name: 'Key',
-          type: CredentialType.privateKey,
-          publicKey: generated.description.publicKey,
-          keyType: generated.description.keyType,
-          fingerprintSha256: generated.description.fingerprintSha256,
-          createdAt: now,
-          updatedAt: now,
-        ),
-      );
-
-      // Dump every value in every table and confirm the key body is absent.
-      final tables = await database.db.query(
-        'sqlite_master',
-        columns: ['name'],
-        where: 'type = ?',
-        whereArgs: ['table'],
-      );
-
-      for (final table in tables) {
-        final name = table['name']! as String;
-        if (name.startsWith('sqlite_')) continue;
-        final rows = await database.db.query(name);
-        final dump = rows.toString();
-
-        expect(
-          dump,
-          isNot(contains('PRIVATE KEY')),
-          reason: 'table $name contains private key material',
+        // The flow the UI performs on import.
+        await secrets.write(
+          SecretKind.privateKey,
+          'c1',
+          generated.privateKeyPem,
         );
-        expect(
-          dump,
-          isNot(contains(generated.privateKeyPem.trim())),
-          reason: 'table $name contains the private key',
+        await credentials.upsert(
+          Credential(
+            id: 'c1',
+            name: 'Key',
+            type: CredentialType.privateKey,
+            publicKey: generated.description.publicKey,
+            keyType: generated.description.keyType,
+            fingerprintSha256: generated.description.fingerprintSha256,
+            createdAt: now,
+            updatedAt: now,
+          ),
         );
-      }
 
-      // But it is retrievable from secure storage.
-      expect(
-        await secrets.read(SecretKind.privateKey, 'c1'),
-        generated.privateKeyPem,
-      );
-    });
+        // Dump every value in every table and confirm the key body is absent.
+        final tables = await database.db.query(
+          'sqlite_master',
+          columns: ['name'],
+          where: 'type = ?',
+          whereArgs: ['table'],
+        );
+
+        for (final table in tables) {
+          final name = table['name']! as String;
+          if (name.startsWith('sqlite_')) continue;
+          final rows = await database.db.query(name);
+          final dump = rows.toString();
+
+          expect(
+            dump,
+            isNot(contains('PRIVATE KEY')),
+            reason: 'table $name contains private key material',
+          );
+          expect(
+            dump,
+            isNot(contains(generated.privateKeyPem.trim())),
+            reason: 'table $name contains the private key',
+          );
+        }
+
+        // But it is retrievable from secure storage.
+        expect(
+          await secrets.read(SecretKind.privateKey, 'c1'),
+          generated.privateKeyPem,
+        );
+      },
+    );
 
     test('the Credential model has no field that can carry a secret', () {
       final credential = Credential(
@@ -128,19 +130,19 @@ void main() {
     late TrustedKeysRepository trusted;
 
     Host host() => Host(
-          id: 'h1',
-          name: 'Server',
-          hostname: 'example.com',
-          port: 22,
-          username: 'dev',
-          authMethod: AuthMethod.privateKey,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-        );
+      id: 'h1',
+      name: 'Server',
+      hostname: 'example.com',
+      port: 22,
+      username: 'dev',
+      authMethod: AuthMethod.privateKey,
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
 
     setUp(() async {
-      // The host must exist: a trust entry references it for display, and the
-      // connection flow always runs against a saved host.
+      // Most connections run against a saved host. A separate test below
+      // covers Test Connection before the form is saved.
       await HostsRepository(database).upsert(host());
       trusted = TrustedKeysRepository(database);
       await trusted.trust(
@@ -268,6 +270,50 @@ void main() {
       expect(stored, isNotNull);
       expect(stored!.fingerprintSha256, 'SHA256:brandnew');
     });
+
+    test('Test Connection keeps consent before a computer is saved', () async {
+      final unsaved = Host(
+        id: 'not-yet-saved',
+        name: 'Preview server',
+        hostname: 'preview.example.com',
+        port: 2222,
+        username: 'dev',
+        authMethod: AuthMethod.privateKey,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+      final verifier = HostKeyVerifier(
+        trustedKeys: trusted,
+        prompt: (_) async => true,
+      );
+
+      final accepted = await verifier.callbackFor(unsaved)(
+        'ssh-ed25519',
+        _fingerprintBytes('SHA256:previewfingerprint'),
+      );
+
+      expect(accepted, isTrue);
+      final stored = await trusted.find(
+        hostname: unsaved.hostname,
+        port: unsaved.port,
+        keyType: 'ssh-ed25519',
+      );
+      expect(stored, isNotNull);
+      expect(stored!.hostId, isNull);
+
+      await HostsRepository(database).upsert(unsaved);
+      await trusted.attachUnownedEndpoint(
+        hostId: unsaved.id,
+        hostname: unsaved.hostname,
+        port: unsaved.port,
+      );
+      final attached = await trusted.find(
+        hostname: unsaved.hostname,
+        port: unsaved.port,
+        keyType: 'ssh-ed25519',
+      );
+      expect(attached!.hostId, unsaved.id);
+    });
   });
 
   group('44.8 verification is never globally disabled', () {
@@ -306,7 +352,8 @@ void main() {
 
     test('onVerifyHostKey is always supplied to the SSH client', () {
       // A null handler makes dartssh2 accept every host key automatically.
-      final source = File('lib/core/ssh/ssh_connection.dart').readAsStringSync();
+      final source = File('lib/core/ssh/ssh_connection.dart')
+          .readAsStringSync();
       expect(source, contains('onVerifyHostKey:'));
       expect(source, isNot(contains('onVerifyHostKey: null')));
     });
@@ -335,7 +382,8 @@ void main() {
   group('44.7 no debug SSH logging in production', () {
     test('printDebug and printTrace are never wired up', () {
       // dartssh2's trace handlers print packet contents, including auth.
-      final source = File('lib/core/ssh/ssh_connection.dart').readAsStringSync();
+      final source = File('lib/core/ssh/ssh_connection.dart')
+          .readAsStringSync();
       expect(source, isNot(contains('printDebug:')));
       expect(source, isNot(contains('printTrace:')));
     });

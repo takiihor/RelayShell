@@ -108,113 +108,157 @@ class AppPreferences {
     int? clearClipboardSeconds,
     String? tmuxSessionPrefix,
     Object? locale = _unset,
-  }) =>
-      AppPreferences(
-        themeMode: themeMode ?? this.themeMode,
-        terminalThemeId: terminalThemeId ?? this.terminalThemeId,
-        terminalFontFamily: terminalFontFamily ?? this.terminalFontFamily,
-        terminalFontSize: terminalFontSize ?? this.terminalFontSize,
-        cursorStyle: cursorStyle ?? this.cursorStyle,
-        hapticFeedback: hapticFeedback ?? this.hapticFeedback,
-        keepScreenAwake: keepScreenAwake ?? this.keepScreenAwake,
-        scrollbackLines: scrollbackLines ?? this.scrollbackLines,
-        accessoryKeyRows: accessoryKeyRows ?? this.accessoryKeyRows,
-        copyOnSelect: copyOnSelect ?? this.copyOnSelect,
-        confirmMultilinePaste:
-            confirmMultilinePaste ?? this.confirmMultilinePaste,
-        defaultSessionMode: defaultSessionMode ?? this.defaultSessionMode,
-        keepaliveSeconds: keepaliveSeconds ?? this.keepaliveSeconds,
-        connectTimeoutSeconds:
-            connectTimeoutSeconds ?? this.connectTimeoutSeconds,
-        authTimeoutSeconds: authTimeoutSeconds ?? this.authTimeoutSeconds,
-        terminalType: terminalType ?? this.terminalType,
-        reconnectBehavior: reconnectBehavior ?? this.reconnectBehavior,
-        maxReconnectAttempts: maxReconnectAttempts ?? this.maxReconnectAttempts,
-        appLockEnabled: appLockEnabled ?? this.appLockEnabled,
-        appLockTimeout: appLockTimeout ?? this.appLockTimeout,
-        credentialBiometricDefault:
-            credentialBiometricDefault ?? this.credentialBiometricDefault,
-        clearClipboardAfterSecrets:
-            clearClipboardAfterSecrets ?? this.clearClipboardAfterSecrets,
-        clearClipboardSeconds:
-            clearClipboardSeconds ?? this.clearClipboardSeconds,
-        tmuxSessionPrefix: tmuxSessionPrefix ?? this.tmuxSessionPrefix,
-        locale: locale == _unset ? this.locale : locale as String?,
-      );
+  }) => AppPreferences(
+    themeMode: themeMode ?? this.themeMode,
+    terminalThemeId: terminalThemeId ?? this.terminalThemeId,
+    terminalFontFamily: terminalFontFamily ?? this.terminalFontFamily,
+    terminalFontSize: terminalFontSize ?? this.terminalFontSize,
+    cursorStyle: cursorStyle ?? this.cursorStyle,
+    hapticFeedback: hapticFeedback ?? this.hapticFeedback,
+    keepScreenAwake: keepScreenAwake ?? this.keepScreenAwake,
+    scrollbackLines: scrollbackLines ?? this.scrollbackLines,
+    accessoryKeyRows: accessoryKeyRows ?? this.accessoryKeyRows,
+    copyOnSelect: copyOnSelect ?? this.copyOnSelect,
+    confirmMultilinePaste: confirmMultilinePaste ?? this.confirmMultilinePaste,
+    defaultSessionMode: defaultSessionMode ?? this.defaultSessionMode,
+    keepaliveSeconds: keepaliveSeconds ?? this.keepaliveSeconds,
+    connectTimeoutSeconds: connectTimeoutSeconds ?? this.connectTimeoutSeconds,
+    authTimeoutSeconds: authTimeoutSeconds ?? this.authTimeoutSeconds,
+    terminalType: terminalType ?? this.terminalType,
+    reconnectBehavior: reconnectBehavior ?? this.reconnectBehavior,
+    maxReconnectAttempts: maxReconnectAttempts ?? this.maxReconnectAttempts,
+    appLockEnabled: appLockEnabled ?? this.appLockEnabled,
+    appLockTimeout: appLockTimeout ?? this.appLockTimeout,
+    credentialBiometricDefault:
+        credentialBiometricDefault ?? this.credentialBiometricDefault,
+    clearClipboardAfterSecrets:
+        clearClipboardAfterSecrets ?? this.clearClipboardAfterSecrets,
+    clearClipboardSeconds: clearClipboardSeconds ?? this.clearClipboardSeconds,
+    tmuxSessionPrefix: tmuxSessionPrefix ?? this.tmuxSessionPrefix,
+    locale: locale == _unset ? this.locale : locale as String?,
+  );
 
   Map<String, String> toMap() => {
-        'theme_mode': themeMode.storageValue,
-        'terminal_theme_id': terminalThemeId,
-        'terminal_font_family': terminalFontFamily,
-        'terminal_font_size': terminalFontSize.toString(),
-        'cursor_style': cursorStyle.storageValue,
-        'haptic_feedback': hapticFeedback.toString(),
-        'keep_screen_awake': keepScreenAwake.toString(),
-        'scrollback_lines': scrollbackLines.toString(),
-        'accessory_key_rows': jsonEncode(accessoryKeyRows),
-        'copy_on_select': copyOnSelect.toString(),
-        'confirm_multiline_paste': confirmMultilinePaste.toString(),
-        'default_session_mode': defaultSessionMode.storageValue,
-        'keepalive_seconds': keepaliveSeconds.toString(),
-        'connect_timeout_seconds': connectTimeoutSeconds.toString(),
-        'auth_timeout_seconds': authTimeoutSeconds.toString(),
-        'terminal_type': terminalType,
-        'reconnect_behavior': reconnectBehavior.storageValue,
-        'max_reconnect_attempts': maxReconnectAttempts.toString(),
-        'app_lock_enabled': appLockEnabled.toString(),
-        'app_lock_timeout': appLockTimeout.storageValue,
-        'credential_biometric_default': credentialBiometricDefault.toString(),
-        'clear_clipboard_after_secrets': clearClipboardAfterSecrets.toString(),
-        'clear_clipboard_seconds': clearClipboardSeconds.toString(),
-        'tmux_session_prefix': tmuxSessionPrefix,
-        'locale': ?locale,
-      };
+    'theme_mode': themeMode.storageValue,
+    'terminal_theme_id': terminalThemeId,
+    'terminal_font_family': terminalFontFamily,
+    'terminal_font_size': terminalFontSize.toString(),
+    'cursor_style': cursorStyle.storageValue,
+    'haptic_feedback': hapticFeedback.toString(),
+    'keep_screen_awake': keepScreenAwake.toString(),
+    'scrollback_lines': scrollbackLines.toString(),
+    'accessory_key_rows': jsonEncode(accessoryKeyRows),
+    'copy_on_select': copyOnSelect.toString(),
+    'confirm_multiline_paste': confirmMultilinePaste.toString(),
+    'default_session_mode': defaultSessionMode.storageValue,
+    'keepalive_seconds': keepaliveSeconds.toString(),
+    'connect_timeout_seconds': connectTimeoutSeconds.toString(),
+    'auth_timeout_seconds': authTimeoutSeconds.toString(),
+    'terminal_type': terminalType,
+    'reconnect_behavior': reconnectBehavior.storageValue,
+    'max_reconnect_attempts': maxReconnectAttempts.toString(),
+    'app_lock_enabled': appLockEnabled.toString(),
+    'app_lock_timeout': appLockTimeout.storageValue,
+    'credential_biometric_default': credentialBiometricDefault.toString(),
+    'clear_clipboard_after_secrets': clearClipboardAfterSecrets.toString(),
+    'clear_clipboard_seconds': clearClipboardSeconds.toString(),
+    'tmux_session_prefix': tmuxSessionPrefix,
+    'locale': ?locale,
+  };
 
   factory AppPreferences.fromMap(Map<String, String> map) {
     const fallback = AppPreferences();
     bool boolAt(String key, bool orElse) => switch (map[key]) {
-          'true' => true,
-          'false' => false,
-          _ => orElse,
-        };
-    int intAt(String key, int orElse) => int.tryParse(map[key] ?? '') ?? orElse;
-    double doubleAt(String key, double orElse) =>
-        double.tryParse(map[key] ?? '') ?? orElse;
+      'true' => true,
+      'false' => false,
+      _ => orElse,
+    };
+    int intAt(String key, int orElse, {required int min, required int max}) {
+      final value = int.tryParse(map[key] ?? '') ?? orElse;
+      return value.clamp(min, max);
+    }
+
+    double doubleAt(
+      String key,
+      double orElse, {
+      required double min,
+      required double max,
+    }) {
+      final value = double.tryParse(map[key] ?? '') ?? orElse;
+      return value.clamp(min, max);
+    }
 
     return AppPreferences(
       themeMode: AppThemeMode.fromStorage(map['theme_mode']),
       terminalThemeId: map['terminal_theme_id'] ?? fallback.terminalThemeId,
       terminalFontFamily:
           map['terminal_font_family'] ?? fallback.terminalFontFamily,
-      terminalFontSize:
-          doubleAt('terminal_font_size', fallback.terminalFontSize),
+      terminalFontSize: doubleAt(
+        'terminal_font_size',
+        fallback.terminalFontSize,
+        min: 8,
+        max: 28,
+      ),
       cursorStyle: TerminalCursorStyle.fromStorage(map['cursor_style']),
       hapticFeedback: boolAt('haptic_feedback', fallback.hapticFeedback),
       keepScreenAwake: boolAt('keep_screen_awake', fallback.keepScreenAwake),
-      scrollbackLines: intAt('scrollback_lines', fallback.scrollbackLines),
+      scrollbackLines: intAt(
+        'scrollback_lines',
+        fallback.scrollbackLines,
+        min: 200,
+        max: 20000,
+      ),
       accessoryKeyRows: _decodeRows(map['accessory_key_rows']),
       copyOnSelect: boolAt('copy_on_select', fallback.copyOnSelect),
-      confirmMultilinePaste:
-          boolAt('confirm_multiline_paste', fallback.confirmMultilinePaste),
+      confirmMultilinePaste: boolAt(
+        'confirm_multiline_paste',
+        fallback.confirmMultilinePaste,
+      ),
       defaultSessionMode: SessionMode.fromStorage(map['default_session_mode']),
-      keepaliveSeconds: intAt('keepalive_seconds', fallback.keepaliveSeconds),
-      connectTimeoutSeconds:
-          intAt('connect_timeout_seconds', fallback.connectTimeoutSeconds),
-      authTimeoutSeconds:
-          intAt('auth_timeout_seconds', fallback.authTimeoutSeconds),
+      keepaliveSeconds: intAt(
+        'keepalive_seconds',
+        fallback.keepaliveSeconds,
+        min: 5,
+        max: 120,
+      ),
+      connectTimeoutSeconds: intAt(
+        'connect_timeout_seconds',
+        fallback.connectTimeoutSeconds,
+        min: 5,
+        max: 60,
+      ),
+      authTimeoutSeconds: intAt(
+        'auth_timeout_seconds',
+        fallback.authTimeoutSeconds,
+        min: 10,
+        max: 120,
+      ),
       terminalType: map['terminal_type'] ?? fallback.terminalType,
-      reconnectBehavior:
-          ReconnectBehavior.fromStorage(map['reconnect_behavior']),
-      maxReconnectAttempts:
-          intAt('max_reconnect_attempts', fallback.maxReconnectAttempts),
+      reconnectBehavior: ReconnectBehavior.fromStorage(
+        map['reconnect_behavior'],
+      ),
+      maxReconnectAttempts: intAt(
+        'max_reconnect_attempts',
+        fallback.maxReconnectAttempts,
+        min: 0,
+        max: 10,
+      ),
       appLockEnabled: boolAt('app_lock_enabled', fallback.appLockEnabled),
       appLockTimeout: AppLockTimeout.fromStorage(map['app_lock_timeout']),
       credentialBiometricDefault: boolAt(
-          'credential_biometric_default', fallback.credentialBiometricDefault),
+        'credential_biometric_default',
+        fallback.credentialBiometricDefault,
+      ),
       clearClipboardAfterSecrets: boolAt(
-          'clear_clipboard_after_secrets', fallback.clearClipboardAfterSecrets),
-      clearClipboardSeconds:
-          intAt('clear_clipboard_seconds', fallback.clearClipboardSeconds),
+        'clear_clipboard_after_secrets',
+        fallback.clearClipboardAfterSecrets,
+      ),
+      clearClipboardSeconds: intAt(
+        'clear_clipboard_seconds',
+        fallback.clearClipboardSeconds,
+        min: 0,
+        max: 3600,
+      ),
       tmuxSessionPrefix:
           map['tmux_session_prefix'] ?? fallback.tmuxSessionPrefix,
       locale: map['locale'],
@@ -227,12 +271,20 @@ class AppPreferences {
       final decoded = jsonDecode(raw);
       if (decoded is! List) return defaultAccessoryRows;
       final rows = <List<String>>[];
-      for (final row in decoded) {
+      for (final row in decoded.take(2)) {
         if (row is List) {
-          rows.add(row.map((e) => e.toString()).toList(growable: false));
+          rows.add(
+            row
+                .take(12)
+                .map((e) => e.toString().trim())
+                .where((key) => key.isNotEmpty && key.length <= 32)
+                .toList(growable: false),
+          );
         }
       }
-      return rows.isEmpty ? defaultAccessoryRows : rows;
+      return rows.any((row) => row.isEmpty) || rows.isEmpty
+          ? defaultAccessoryRows
+          : rows;
     } on FormatException {
       return defaultAccessoryRows;
     }

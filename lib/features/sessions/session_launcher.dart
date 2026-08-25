@@ -60,6 +60,17 @@ class OneShotResult {
   bool get succeeded => exitCode == 0;
 }
 
+/// A one-shot command in progress. Cancellation closes only its exec channel;
+/// terminals and file transfers sharing the host connection keep running.
+class OneShotExecution {
+  OneShotExecution._({required this.completion, required this._cancel});
+
+  final Future<OneShotResult> completion;
+  final void Function() _cancel;
+
+  void cancel() => _cancel();
+}
+
 /// Raised when a launch cannot proceed and the UI must explain why.
 class LaunchException implements Exception {
   const LaunchException(this.message, {this.action});
@@ -252,6 +263,7 @@ class SessionLauncher {
       );
       if (open != null) {
         terminals.setActive(open.id);
+        if (open.canReconnect) await open.reconnect();
         await sessions.touch(record.id);
         return open;
       }
@@ -273,6 +285,18 @@ class SessionLauncher {
               record.launchCommand!,
               workingDirectory: record.workingDirectory,
             );
+    }
+
+    final matching = terminals.findMatching(
+      hostId: host.id,
+      projectId: project?.id,
+      plan: plan,
+    );
+    if (matching != null) {
+      terminals.setActive(matching.id);
+      if (matching.canReconnect) await matching.reconnect();
+      await sessions.touch(record.id);
+      return matching;
     }
 
     await sessions.touch(record.id);
@@ -300,6 +324,7 @@ class SessionLauncher {
     );
     if (open != null) {
       terminals.setActive(open.id);
+      if (open.canReconnect) await open.reconnect();
       return open;
     }
 
@@ -415,36 +440,66 @@ class SessionLauncher {
     );
   }
 
-  /// Runs a prepared command once and returns its output (SPEC 12.4).
-  Future<OneShotResult> runOneShot({required PreparedCommand prepared}) async {
-    final connection = await connections.connect(prepared.host);
-    final builder = SessionLaunchBuilder(
-      platform: prepared.host.platform,
-      prefix: 'rdc',
-    );
+  /// Starts a prepared command once with a bounded buffer and a cancellation
+  /// handle for the result sheet (SPEC 12.4).
+  OneShotExecution startOneShot({required PreparedCommand prepared}) {
+    CommandExecution? command;
+    var cancelled = false;
 
-    final String remoteCommand;
-    try {
-      remoteCommand = builder.oneShot(
-        prepared.resolved,
-        workingDirectory: prepared.workingDirectory,
+    void cancel() {
+      cancelled = true;
+      command?.cancel();
+    }
+
+    Future<OneShotResult> run() async {
+      final connection = await connections.connect(prepared.host);
+      if (cancelled) {
+        throw const SshFailure(
+          kind: SshFailureKind.closedByRemote,
+          message: 'Command cancelled.',
+        );
+      }
+
+      final builder = SessionLaunchBuilder(
+        platform: prepared.host.platform,
+        prefix: 'rdc',
       );
-    } on UnquotableArgumentError catch (error) {
-      throw LaunchException(
-        'The working directory cannot be used safely on this computer.',
-        action: error.reason,
+
+      final String remoteCommand;
+      try {
+        remoteCommand = builder.oneShot(
+          prepared.resolved,
+          workingDirectory: prepared.workingDirectory,
+        );
+      } on UnquotableArgumentError catch (error) {
+        throw LaunchException(
+          'The working directory cannot be used safely on this computer.',
+          action: error.reason,
+        );
+      }
+
+      command = connection.startCommand(
+        remoteCommand,
+        maxOutputBytes: 1024 * 1024,
+        timeout: const Duration(minutes: 2),
+      );
+      if (cancelled) command!.cancel();
+      final result = await command!.completion;
+      await hosts.markConnected(prepared.host.id);
+
+      return OneShotResult(
+        command: prepared.resolved,
+        output: result.combined,
+        exitCode: result.exitCode,
       );
     }
 
-    final result = await connection.run(remoteCommand);
-    await hosts.markConnected(prepared.host.id);
-
-    return OneShotResult(
-      command: prepared.resolved,
-      output: result.combined,
-      exitCode: result.exitCode,
-    );
+    return OneShotExecution._(completion: run(), cancel: cancel);
   }
+
+  /// Runs a prepared command once and returns its output (SPEC 12.4).
+  Future<OneShotResult> runOneShot({required PreparedCommand prepared}) =>
+      startOneShot(prepared: prepared).completion;
 
   /// Opens a connection without opening a terminal, e.g. for the file browser.
   Future<SshConnection> connectOnly(Host host) async {
@@ -467,18 +522,3 @@ class SessionLauncher {
     return requested;
   }
 }
-
-/// Raised when a persistent session is requested on a host without tmux and
-/// the caller explicitly wants to know rather than silently downgrade.
-class PersistentSessionUnavailable implements Exception {
-  const PersistentSessionUnavailable(this.reason);
-
-  final String reason;
-
-  @override
-  String toString() => reason;
-}
-
-/// Thrown by [SessionLauncher] when SSH itself fails, so callers can present
-/// the same actionable error UI used elsewhere.
-typedef LaunchFailure = SshFailure;

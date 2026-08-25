@@ -25,10 +25,7 @@ class CommandInputRequest {
 /// Result of substituting variables into a command template.
 @immutable
 class CommandSubstitution {
-  const CommandSubstitution({
-    required this.command,
-    required this.unresolved,
-  });
+  const CommandSubstitution({required this.command, required this.unresolved});
 
   /// The command with every resolvable placeholder replaced.
   final String command;
@@ -55,7 +52,9 @@ class CommandSubstitution {
 class CommandVariableResolver {
   const CommandVariableResolver();
 
-  static final RegExp _placeholder = RegExp(r'\{\{\s*([a-zA-Z0-9_:.-]+)\s*\}\}');
+  static final RegExp _placeholder = RegExp(
+    r'\{\{\s*([a-zA-Z0-9_:.-]+)\s*\}\}',
+  );
 
   /// Known non-input variable names, so the UI can document them.
   static const Set<String> knownVariables = {

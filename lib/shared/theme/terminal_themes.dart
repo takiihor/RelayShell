@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:xterm/xterm.dart';
 
-/// A selectable terminal colour scheme (SPEC 21 Appearance).
+/// A selectable terminal colour scheme (SPEC 21 Appearance), available to
+/// terminal-facing features without importing the app composition layer.
 @immutable
 class NamedTerminalTheme {
   const NamedTerminalTheme({
@@ -160,10 +161,8 @@ class TerminalThemeCatalog {
     highContrast,
   ];
 
-  static NamedTerminalTheme byId(String id) => all.firstWhere(
-        (theme) => theme.id == id,
-        orElse: () => relayDark,
-      );
+  static NamedTerminalTheme byId(String id) =>
+      all.firstWhere((theme) => theme.id == id, orElse: () => relayDark);
 }
 
 /// Monospace fonts offered in Settings.

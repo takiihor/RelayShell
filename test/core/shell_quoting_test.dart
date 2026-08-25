@@ -33,7 +33,6 @@ void main() {
       expect(quoter.quote("it's"), r"'it'\''s'");
     });
 
-
     test('quotes the empty string', () {
       expect(quoter.quote(''), "''");
     });
@@ -174,10 +173,10 @@ void main() {
     test('a quoted path stays a single argument', () async {
       // `set -- <quoted>` then `$#` reports how many arguments the shell saw.
       final quoted = quoter.quote('/home/a b/c d');
-      final result = await Process.run(
-        '/bin/sh',
-        ['-c', 'set -- $quoted; printf %s "\$#"'],
-      );
+      final result = await Process.run('/bin/sh', [
+        '-c',
+        'set -- $quoted; printf %s "\$#"',
+      ]);
       expect(result.stdout, '1');
     });
   }, skip: !Platform.isLinux && !Platform.isMacOS);

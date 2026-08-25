@@ -9,7 +9,8 @@ import '../core/platform/secure_window.dart';
 import '../features/settings/app_lock_screen.dart';
 import '../features/terminal/terminal_providers.dart';
 import '../l10n/app_localizations.dart';
-import 'providers.dart';
+import '../shared/theme/status_colors.dart';
+import '../core/providers.dart';
 import 'router/app_router.dart';
 import 'theme/app_theme.dart';
 
@@ -19,8 +20,9 @@ import 'theme/app_theme.dart';
 /// which has no `BuildContext`. Routing them through one known navigator is the
 /// smallest seam that keeps those decisions in the user's hands without the
 /// core depending on Flutter's widget tree.
-final GlobalKey<NavigatorState> rootNavigatorKey =
-    GlobalKey<NavigatorState>(debugLabel: 'root');
+final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>(
+  debugLabel: 'root',
+);
 
 /// The application root.
 class RelayShellApp extends ConsumerStatefulWidget {
@@ -88,7 +90,7 @@ class _RelayShellAppState extends ConsumerState<RelayShellApp>
     unawaited(_syncWindowSecurity(preferences.appLockEnabled));
 
     return MaterialApp.router(
-      title: 'Remote Dev Console',
+      onGenerateTitle: (context) => AppLocalizations.of(context).appTitle,
       debugShowCheckedModeBanner: false,
       routerConfig: _router,
       themeMode: AppTheme.themeModeFrom(preferences.themeMode),
@@ -110,10 +112,7 @@ class _RelayShellAppState extends ConsumerState<RelayShellApp>
         // The lock is drawn above the whole app rather than routed to, so a
         // deep link or a resumed route cannot land behind it.
         return Stack(
-          children: [
-            ?child,
-            if (appLock.isLocked) const AppLockScreen(),
-          ],
+          children: [?child, if (appLock.isLocked) const AppLockScreen()],
         );
       },
     );

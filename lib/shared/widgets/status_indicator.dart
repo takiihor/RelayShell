@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../../app/theme/app_theme.dart';
 import '../../l10n/app_localizations.dart';
 import '../models/enums.dart';
+import '../theme/status_colors.dart';
 
 /// A small labelled status marker (SPEC 39).
 ///
@@ -51,8 +51,8 @@ class StatusIndicator extends StatelessWidget {
             child: Text(
               label,
               style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
               overflow: TextOverflow.ellipsis,
             ),
           ),
@@ -78,39 +78,39 @@ class ConnectionStatusIndicator extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     final (status, label) = switch (state) {
       SshConnectionState.connected => (
-          SemanticStatus.connected,
-          l10n.statusConnected
-        ),
+        SemanticStatus.connected,
+        l10n.statusConnected,
+      ),
       SshConnectionState.idle => (SemanticStatus.inactive, l10n.statusIdle),
       SshConnectionState.closed => (
-          SemanticStatus.inactive,
-          l10n.statusDisconnected
-        ),
+        SemanticStatus.inactive,
+        l10n.statusDisconnected,
+      ),
       SshConnectionState.failed => (SemanticStatus.error, l10n.statusFailed),
       SshConnectionState.resolving => (
-          SemanticStatus.connecting,
-          l10n.statusResolving
-        ),
+        SemanticStatus.connecting,
+        l10n.statusResolving,
+      ),
       SshConnectionState.connecting => (
-          SemanticStatus.connecting,
-          l10n.statusConnecting
-        ),
+        SemanticStatus.connecting,
+        l10n.statusConnecting,
+      ),
       SshConnectionState.handshaking => (
-          SemanticStatus.connecting,
-          l10n.statusHandshaking
-        ),
+        SemanticStatus.connecting,
+        l10n.statusHandshaking,
+      ),
       SshConnectionState.verifyingHost => (
-          SemanticStatus.warning,
-          l10n.statusVerifyingHost
-        ),
+        SemanticStatus.warning,
+        l10n.statusVerifyingHost,
+      ),
       SshConnectionState.authenticating => (
-          SemanticStatus.connecting,
-          l10n.statusAuthenticating
-        ),
+        SemanticStatus.connecting,
+        l10n.statusAuthenticating,
+      ),
       SshConnectionState.reconnecting => (
-          SemanticStatus.warning,
-          l10n.statusReconnecting
-        ),
+        SemanticStatus.warning,
+        l10n.statusReconnecting,
+      ),
     };
 
     return StatusIndicator(status: status, label: label, compact: compact);
@@ -134,17 +134,17 @@ class ReachabilityIndicator extends StatelessWidget {
     final (status, label) = switch (reachability) {
       HostReachability.unknown => (SemanticStatus.inactive, l10n.statusUnknown),
       HostReachability.checking => (
-          SemanticStatus.connecting,
-          l10n.statusChecking
-        ),
+        SemanticStatus.connecting,
+        l10n.statusChecking,
+      ),
       HostReachability.reachable => (
-          SemanticStatus.connected,
-          l10n.statusReachable
-        ),
+        SemanticStatus.connected,
+        l10n.statusReachable,
+      ),
       HostReachability.unreachable => (
-          SemanticStatus.warning,
-          l10n.statusUnreachable
-        ),
+        SemanticStatus.warning,
+        l10n.statusUnreachable,
+      ),
     };
 
     return StatusIndicator(status: status, label: label, compact: compact);

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:dartssh2/dartssh2.dart';
 import 'package:flutter/foundation.dart';
@@ -33,13 +34,12 @@ class SshConnectionStatus {
     SshFailure? failure,
     int? reconnectAttempt,
     String? banner,
-  }) =>
-      SshConnectionStatus(
-        state: state ?? this.state,
-        failure: failure ?? this.failure,
-        reconnectAttempt: reconnectAttempt ?? this.reconnectAttempt,
-        banner: banner ?? this.banner,
-      );
+  }) => SshConnectionStatus(
+    state: state ?? this.state,
+    failure: failure ?? this.failure,
+    reconnectAttempt: reconnectAttempt ?? this.reconnectAttempt,
+    banner: banner ?? this.banner,
+  );
 }
 
 /// One live SSH connection to a [Host] (SPEC 27).
@@ -71,8 +71,9 @@ class SshConnection {
   final StreamController<SshConnectionStatus> _statusController =
       StreamController<SshConnectionStatus>.broadcast();
 
-  SshConnectionStatus _status =
-      const SshConnectionStatus(state: SshConnectionState.idle);
+  SshConnectionStatus _status = const SshConnectionStatus(
+    state: SshConnectionState.idle,
+  );
 
   /// Latest status. Also delivered to new listeners of [statusStream].
   SshConnectionStatus get status => _status;
@@ -175,7 +176,8 @@ class SshConnection {
 
       // A rejected or changed host key produces a generic transport error from
       // the library; the verifier knows the real reason.
-      final failure = verifier.lastFailure ??
+      final failure =
+          verifier.lastFailure ??
           SshFailure.from(error, hostname: host.hostname, port: host.port);
 
       _setStatus(
@@ -276,33 +278,116 @@ class SshConnection {
     }
   }
 
-  /// Runs [command] and collects its output.
+  /// Starts an exec channel with a bounded output buffer and deadline.
   ///
-  /// Intended for the app's own small probes (tmux discovery, `pwd`) and for
-  /// one-shot saved commands, all of which produce bounded output.
-  Future<CommandResult> run(String command) async {
-    final session = await execute(command);
-    final stdoutBuffer = StringBuffer();
-    final stderrBuffer = StringBuffer();
+  /// A saved command is arbitrary user shell input, so it must not be able to
+  /// retain an infinite log stream in phone memory or keep a dismissed sheet
+  /// running forever. [CommandExecution.cancel] closes only this channel, not
+  /// the shared SSH transport used by terminals and file transfers.
+  CommandExecution startCommand(
+    String command, {
+    int maxOutputBytes = 256 * 1024,
+    Duration timeout = const Duration(seconds: 30),
+  }) {
+    SSHSession? session;
+    var cancelled = false;
 
-    final stdoutDone = session.stdout
-        .cast<List<int>>()
-        .transform(const Utf8Decoder(allowMalformed: true))
-        .forEach(stdoutBuffer.write);
-    final stderrDone = session.stderr
-        .cast<List<int>>()
-        .transform(const Utf8Decoder(allowMalformed: true))
-        .forEach(stderrBuffer.write);
+    void cancel() {
+      cancelled = true;
+      session?.close();
+    }
 
-    await Future.wait([stdoutDone, stderrDone]);
-    await session.done;
+    Future<CommandResult> collect() async {
+      try {
+        session = await execute(command);
+        if (cancelled) {
+          session!.close();
+          throw const _CommandCancelled();
+        }
 
-    return CommandResult(
-      stdout: stdoutBuffer.toString(),
-      stderr: stderrBuffer.toString(),
-      exitCode: session.exitCode,
-    );
+        final stdout = BytesBuilder(copy: false);
+        final stderr = BytesBuilder(copy: false);
+        var received = 0;
+        var exceededLimit = false;
+
+        Future<void> drain(
+          Stream<Uint8List> stream,
+          BytesBuilder output,
+        ) async {
+          await for (final chunk in stream) {
+            if (cancelled || exceededLimit) break;
+            received += chunk.length;
+            if (received > maxOutputBytes) {
+              exceededLimit = true;
+              session?.close();
+              break;
+            }
+            output.add(chunk);
+          }
+        }
+
+        Future<void> waitForDone() async {
+          try {
+            await session!.done;
+          } catch (_) {
+            // The channel streams surface their own failures below.
+          }
+        }
+
+        await Future.wait([
+          drain(session!.stdout, stdout),
+          drain(session!.stderr, stderr),
+          waitForDone(),
+        ]).timeout(timeout);
+
+        if (cancelled) throw const _CommandCancelled();
+        if (exceededLimit) {
+          throw SshFailure(
+            kind: SshFailureKind.featureUnavailable,
+            message:
+                'Command output exceeded the ${_formatByteLimit(maxOutputBytes)} limit.',
+            action:
+                'Use an interactive terminal or redirect the output to a file.',
+          );
+        }
+
+        return CommandResult(
+          stdout: const Utf8Decoder(allowMalformed: true)
+              .convert(stdout.takeBytes()),
+          stderr: const Utf8Decoder(allowMalformed: true)
+              .convert(stderr.takeBytes()),
+          exitCode: session!.exitCode,
+        );
+      } on TimeoutException {
+        session?.close();
+        throw SshFailure(
+          kind: SshFailureKind.timeout,
+          message:
+              'Command did not finish within ${timeout.inSeconds} seconds.',
+          action: 'Use an interactive terminal for long-running commands.',
+        );
+      } on _CommandCancelled {
+        throw const SshFailure(
+          kind: SshFailureKind.closedByRemote,
+          message: 'Command cancelled.',
+        );
+      }
+    }
+
+    return CommandExecution._(completion: collect(), cancel: cancel);
   }
+
+  /// Runs [command] to completion. Small probes use the conservative default;
+  /// user-triggered commands should use [startCommand] so their UI can cancel.
+  Future<CommandResult> run(
+    String command, {
+    int maxOutputBytes = 256 * 1024,
+    Duration timeout = const Duration(seconds: 30),
+  }) => startCommand(
+    command,
+    maxOutputBytes: maxOutputBytes,
+    timeout: timeout,
+  ).completion;
 
   /// Opens (and caches) an SFTP client on this connection.
   ///
@@ -322,7 +407,10 @@ class SshConnection {
   }
 
   /// Opens a direct-tcpip channel to [remoteHost]:[remotePort].
-  Future<SSHForwardChannel> forwardLocal(String remoteHost, int remotePort) async {
+  Future<SSHForwardChannel> forwardLocal(
+    String remoteHost,
+    int remotePort,
+  ) async {
     final client = _requireClient();
     try {
       return await client.forwardLocal(remoteHost, remotePort);
@@ -337,11 +425,7 @@ class SshConnection {
     try {
       return await client.forwardRemote(host: bindHost, port: port);
     } catch (error) {
-      throw SshFailure.from(
-        error,
-        hostname: host.hostname,
-        port: host.port,
-      );
+      throw SshFailure.from(error, hostname: host.hostname, port: host.port);
     }
   }
 
@@ -378,6 +462,24 @@ class SshConnection {
     await _statusController.close();
   }
 }
+
+/// A running exec channel that can be cancelled without dropping SSH entirely.
+class CommandExecution {
+  CommandExecution._({required this.completion, required this._cancel});
+
+  final Future<CommandResult> completion;
+  final void Function() _cancel;
+
+  void cancel() => _cancel();
+}
+
+class _CommandCancelled implements Exception {
+  const _CommandCancelled();
+}
+
+String _formatByteLimit(int bytes) => bytes >= 1024 * 1024
+    ? '${bytes ~/ (1024 * 1024)} MB'
+    : '${bytes ~/ 1024} KB';
 
 /// Output of a completed one-shot command.
 @immutable

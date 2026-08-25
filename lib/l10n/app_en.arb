@@ -1,7 +1,7 @@
 {
   "@@locale": "en",
 
-  "appTitle": "Remote Dev Console",
+  "appTitle": "RelayShell",
   "appShortTitle": "RelayShell",
 
   "navHome": "Home",
@@ -563,7 +563,7 @@
   "searchSectionCommands": "Commands",
   "searchSectionSessions": "Sessions",
 
-  "lockTitle": "Remote Dev Console is locked",
+  "lockTitle": "RelayShell is locked",
   "lockBody": "Authenticate to continue.",
   "lockFailed": "Authentication was not completed.",
 

@@ -58,6 +58,23 @@ class TrustedKeysRepository extends Repository {
     notifyChanged();
   }
 
+  /// Associates pre-save trust decisions with the host that was subsequently
+  /// saved. The endpoint remains the identity authority; this is only friendly
+  /// metadata for the settings list.
+  Future<void> attachUnownedEndpoint({
+    required String hostId,
+    required String hostname,
+    required int port,
+  }) async {
+    await db.update(
+      table,
+      {'host_id': hostId},
+      where: 'host_id IS NULL AND hostname = ? AND port = ?',
+      whereArgs: [hostname, port],
+    );
+    notifyChanged();
+  }
+
   Future<void> revoke(String id) async {
     await db.delete(table, where: 'id = ?', whereArgs: [id]);
     notifyChanged();

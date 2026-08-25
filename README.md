@@ -1,4 +1,4 @@
-# Remote Dev Console (RelayShell)
+# RelayShell
 
 A mobile control center for remote development over SSH, built to [SPEC.md](SPEC.md).
 
@@ -10,15 +10,15 @@ resume a session, enter a project, launch a CLI, run a saved command, browse fil
 
 | Check | Result |
 | --- | --- |
-| `flutter analyze` | 0 issues |
-| `flutter test` | 275 passing |
-| `flutter build apk --debug` | builds |
-| `flutter build apk --release` | builds (64.6 MB) |
+| `flutter analyze` | run before every release |
+| `flutter test` | run before every release |
+| Android debug build | run before every release |
+| Android release signing | requires a private upload key; cannot fall back to debug signing |
 
 ## Requirements
 
 - Flutter 3.47+ (Dart 3.13+)
-- Android SDK platform 36 (`compileSdk` is pinned to 36 in `android/app/build.gradle.kts`)
+- Android SDK platform 37 (`compileSdk` is pinned to 37 in `android/app/build.gradle.kts`)
 - Xcode for iOS builds
 
 ## Running
@@ -27,6 +27,31 @@ resume a session, enter a project, launch a CLI, run a saved command, browse fil
 flutter pub get
 flutter run
 ```
+
+## Android release signing
+
+Release artifacts deliberately fail to build until they are configured with a
+private upload key. This prevents the Android toolchain from silently signing a
+shipping build with its publicly known debug certificate.
+
+```bash
+keytool -genkeypair -v -keystore ~/relayshell-upload.jks \
+  -alias upload -keyalg RSA -keysize 4096 -validity 10000
+cp android/key.properties.example android/key.properties
+```
+
+Set the four values in `android/key.properties`, using an absolute path for
+`storeFile`, then build the store upload artifact:
+
+```bash
+flutter build appbundle --release
+```
+
+Never commit `android/key.properties` or the keystore. Back up the upload key
+outside this repository; losing it prevents future Android updates. Confirm
+that `com.relayshell.relayshell` is registered to the intended Play developer
+account before the first upload, because an Android application ID cannot be
+changed after publication.
 
 ## Architecture
 
@@ -89,6 +114,14 @@ The suite favours checking real properties over restating the implementation:
 - **Widget tests** run against the real service graph (real repositories, router
   and screens) on an in-memory database.
 
+## Release gates
+
+Automated checks cannot prove OS prompts, device keyboards, or real SSH server
+interoperability. Follow [the release checklist](docs/RELEASE_CHECKLIST.md) on
+physical Android and iOS devices before publishing. The checklist includes the
+computers, projects, sessions, reconnection, tmux, biometric, file transfer,
+and accessibility paths that need a human/device pass.
+
 ## Known limitations
 
 - **Ed25519 only** for key generation. Importing accepts RSA, ECDSA and Ed25519,
@@ -100,12 +133,13 @@ The suite favours checking real properties over restating the implementation:
 - **SSH agent authentication is unavailable** on mobile and reports so explicitly.
 - **`FLAG_SECURE` is Android-only.** iOS has no public equivalent, so there the
   lock overlay is the protection.
-- **Not verified on physical devices.** Builds and the full suite pass, but
-  SPEC 43's device and terminal-compatibility matrix (vim, htop, CJK rendering,
-  Bluetooth keyboards, real SSH servers) still needs a hardware pass.
+- **Physical-device verification is a release gate.** It cannot be substituted
+  by a Linux CI run; see the linked checklist for the required matrix.
 
 ## Privacy
 
 No account, no server, no relay. Terminal output, commands, keys, passwords and
 remote file contents stay on the device and the user's own machines. Config export
 never includes credentials.
+
+The publishable policy text is in [PRIVACY.md](PRIVACY.md).

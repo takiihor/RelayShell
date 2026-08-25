@@ -154,7 +154,9 @@ class TmuxCommandBuilder {
       if (fields.length < 3) continue;
       final name = fields[0].trim();
       if (name.isEmpty) continue;
-      final createdEpoch = fields.length > 3 ? int.tryParse(fields[3].trim()) : null;
+      final createdEpoch = fields.length > 3
+          ? int.tryParse(fields[3].trim())
+          : null;
       sessions.add(
         TmuxSession(
           name: name,

@@ -44,70 +44,68 @@ class Project {
     bool? favorite,
     DateTime? updatedAt,
     Object? lastOpenedAt = _unset,
-  }) =>
-      Project(
-        id: id,
-        name: name ?? this.name,
-        hostId: hostId ?? this.hostId,
-        remotePath: remotePath ?? this.remotePath,
-        description:
-            description == _unset ? this.description : description as String?,
-        defaultSessionMode: defaultSessionMode ?? this.defaultSessionMode,
-        defaultTmuxName: defaultTmuxName == _unset
-            ? this.defaultTmuxName
-            : defaultTmuxName as String?,
-        favorite: favorite ?? this.favorite,
-        createdAt: createdAt,
-        updatedAt: updatedAt ?? DateTime.now(),
-        lastOpenedAt: lastOpenedAt == _unset
-            ? this.lastOpenedAt
-            : lastOpenedAt as DateTime?,
-      );
+  }) => Project(
+    id: id,
+    name: name ?? this.name,
+    hostId: hostId ?? this.hostId,
+    remotePath: remotePath ?? this.remotePath,
+    description: description == _unset
+        ? this.description
+        : description as String?,
+    defaultSessionMode: defaultSessionMode ?? this.defaultSessionMode,
+    defaultTmuxName: defaultTmuxName == _unset
+        ? this.defaultTmuxName
+        : defaultTmuxName as String?,
+    favorite: favorite ?? this.favorite,
+    createdAt: createdAt,
+    updatedAt: updatedAt ?? DateTime.now(),
+    lastOpenedAt: lastOpenedAt == _unset
+        ? this.lastOpenedAt
+        : lastOpenedAt as DateTime?,
+  );
 
   Map<String, Object?> toRow() => {
-        'id': id,
-        'name': name,
-        'host_id': hostId,
-        'remote_path': remotePath,
-        'description': description,
-        'default_session_mode': defaultSessionMode.storageValue,
-        'default_tmux_name': defaultTmuxName,
-        'favorite': favorite ? 1 : 0,
-        'created_at': createdAt.millisecondsSinceEpoch,
-        'updated_at': updatedAt.millisecondsSinceEpoch,
-        'last_opened_at': lastOpenedAt?.millisecondsSinceEpoch,
-      };
+    'id': id,
+    'name': name,
+    'host_id': hostId,
+    'remote_path': remotePath,
+    'description': description,
+    'default_session_mode': defaultSessionMode.storageValue,
+    'default_tmux_name': defaultTmuxName,
+    'favorite': favorite ? 1 : 0,
+    'created_at': createdAt.millisecondsSinceEpoch,
+    'updated_at': updatedAt.millisecondsSinceEpoch,
+    'last_opened_at': lastOpenedAt?.millisecondsSinceEpoch,
+  };
 
   factory Project.fromRow(Map<String, Object?> row) => Project(
-        id: row['id']! as String,
-        name: row['name']! as String,
-        hostId: row['host_id']! as String,
-        remotePath: row['remote_path']! as String,
-        description: row['description'] as String?,
-        defaultSessionMode:
-            SessionMode.fromStorage(row['default_session_mode'] as String?),
-        defaultTmuxName: row['default_tmux_name'] as String?,
-        favorite: (row['favorite'] as int? ?? 0) == 1,
-        createdAt:
-            DateTime.fromMillisecondsSinceEpoch(row['created_at']! as int),
-        updatedAt:
-            DateTime.fromMillisecondsSinceEpoch(row['updated_at']! as int),
-        lastOpenedAt: row['last_opened_at'] == null
-            ? null
-            : DateTime.fromMillisecondsSinceEpoch(
-                row['last_opened_at']! as int),
-      );
+    id: row['id']! as String,
+    name: row['name']! as String,
+    hostId: row['host_id']! as String,
+    remotePath: row['remote_path']! as String,
+    description: row['description'] as String?,
+    defaultSessionMode: SessionMode.fromStorage(
+      row['default_session_mode'] as String?,
+    ),
+    defaultTmuxName: row['default_tmux_name'] as String?,
+    favorite: (row['favorite'] as int? ?? 0) == 1,
+    createdAt: DateTime.fromMillisecondsSinceEpoch(row['created_at']! as int),
+    updatedAt: DateTime.fromMillisecondsSinceEpoch(row['updated_at']! as int),
+    lastOpenedAt: row['last_opened_at'] == null
+        ? null
+        : DateTime.fromMillisecondsSinceEpoch(row['last_opened_at']! as int),
+  );
 
   Map<String, Object?> toExportJson() => {
-        'id': id,
-        'name': name,
-        'host_id': hostId,
-        'remote_path': remotePath,
-        'description': description,
-        'default_session_mode': defaultSessionMode.storageValue,
-        'default_tmux_name': defaultTmuxName,
-        'favorite': favorite,
-      };
+    'id': id,
+    'name': name,
+    'host_id': hostId,
+    'remote_path': remotePath,
+    'description': description,
+    'default_session_mode': defaultSessionMode.storageValue,
+    'default_tmux_name': defaultTmuxName,
+    'favorite': favorite,
+  };
 
   factory Project.fromExportJson(
     Map<String, Object?> json, {
@@ -121,8 +119,9 @@ class Project {
       hostId: hostId,
       remotePath: (json['remote_path'] as String?) ?? '.',
       description: json['description'] as String?,
-      defaultSessionMode:
-          SessionMode.fromStorage(json['default_session_mode'] as String?),
+      defaultSessionMode: SessionMode.fromStorage(
+        json['default_session_mode'] as String?,
+      ),
       defaultTmuxName: json['default_tmux_name'] as String?,
       favorite: json['favorite'] == true,
       createdAt: now,

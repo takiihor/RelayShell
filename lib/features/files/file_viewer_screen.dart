@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../app/providers.dart';
+import '../../core/providers.dart';
 import '../../core/ssh/sftp_service.dart';
 import '../../core/ssh/ssh_connection.dart';
 import '../../l10n/app_localizations.dart';
@@ -57,10 +57,9 @@ class _FileViewerScreenState extends ConsumerState<FileViewerScreen> {
     });
 
     try {
-      final text = await ref.read(sftpServiceProvider).readTextFile(
-            widget.connection,
-            widget.file.path,
-          );
+      final text = await ref
+          .read(sftpServiceProvider)
+          .readTextFile(widget.connection, widget.file.path);
       if (!mounted) return;
       setState(() {
         _original = text;
@@ -81,11 +80,9 @@ class _FileViewerScreenState extends ConsumerState<FileViewerScreen> {
     final l10n = AppLocalizations.of(context);
 
     try {
-      await ref.read(sftpServiceProvider).writeTextFile(
-            widget.connection,
-            widget.file.path,
-            _controller.text,
-          );
+      await ref
+          .read(sftpServiceProvider)
+          .writeTextFile(widget.connection, widget.file.path, _controller.text);
       if (!mounted) return;
       setState(() {
         _original = _controller.text;

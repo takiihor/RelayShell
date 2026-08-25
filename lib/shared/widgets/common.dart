@@ -127,11 +127,7 @@ class FailureView extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Icon(
-              Icons.error_outline,
-              size: 40,
-              color: theme.colorScheme.error,
-            ),
+            Icon(Icons.error_outline, size: 40, color: theme.colorScheme.error),
             const SizedBox(height: 16),
             Text(
               failure.message,
@@ -233,8 +229,8 @@ class LoadingView extends StatelessWidget {
             Text(
               message!,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           ],
         ],
@@ -338,8 +334,9 @@ void showMessage(BuildContext context, String message, {bool isError = false}) {
     ..showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor:
-            isError ? Theme.of(context).colorScheme.errorContainer : null,
+        backgroundColor: isError
+            ? Theme.of(context).colorScheme.errorContainer
+            : null,
       ),
     );
 }
@@ -347,9 +344,10 @@ void showMessage(BuildContext context, String message, {bool isError = false}) {
 /// Reports a failure as a snack bar, keeping the actionable phrasing.
 void showFailure(BuildContext context, Object error) {
   final message = switch (error) {
-    SshFailure failure => failure.action == null
-        ? failure.message
-        : '${failure.message} ${failure.action}',
+    SshFailure failure =>
+      failure.action == null
+          ? failure.message
+          : '${failure.message} ${failure.action}',
     _ => error.toString(),
   };
   showMessage(context, message, isError: true);

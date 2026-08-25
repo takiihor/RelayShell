@@ -25,7 +25,8 @@ class AppDatabase {
     DatabaseFactory? factory,
   }) async {
     final dbFactory = factory ?? databaseFactory;
-    final dbPath = path ?? p.join(await dbFactory.getDatabasesPath(), defaultFileName);
+    final dbPath =
+        path ?? p.join(await dbFactory.getDatabasesPath(), defaultFileName);
 
     final database = await dbFactory.openDatabase(
       dbPath,

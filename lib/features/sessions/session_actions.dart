@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../app/providers.dart';
-import '../../app/router/app_router.dart';
+import '../../core/providers.dart';
+import '../../shared/navigation/routes.dart';
 import '../../core/shell/tmux.dart';
 import '../../core/ssh/ssh_failure.dart';
 import '../../l10n/app_localizations.dart';
@@ -21,11 +21,13 @@ Future<void> openHostTerminal(
   SessionMode? mode,
 }) async {
   await _launch(context, ref, () async {
-    final session = await ref.read(sessionLauncherProvider).openHostTerminal(
-      host: host,
-      preferences: ref.read(preferencesProvider),
-      mode: mode,
-    );
+    final session = await ref
+        .read(sessionLauncherProvider)
+        .openHostTerminal(
+          host: host,
+          preferences: ref.read(preferencesProvider),
+          mode: mode,
+        );
     return session.id;
   });
 }
@@ -61,15 +63,20 @@ Future<void> openProjectTerminal(
   final host = await ref.read(hostsRepositoryProvider).byId(project.hostId);
   if (host == null) {
     if (context.mounted) {
-      showMessage(context, AppLocalizations.of(context).errorNoHosts,
-          isError: true);
+      showMessage(
+        context,
+        AppLocalizations.of(context).errorNoHosts,
+        isError: true,
+      );
     }
     return;
   }
 
   if (!context.mounted) return;
   await _launch(context, ref, () async {
-    final session = await ref.read(sessionLauncherProvider).openProject(
+    final session = await ref
+        .read(sessionLauncherProvider)
+        .openProject(
           project: project,
           host: host,
           preferences: ref.read(preferencesProvider),
@@ -88,7 +95,9 @@ Future<void> resumeSessionRecord(
   SessionRecord record,
 ) async {
   await _launch(context, ref, () async {
-    final session = await ref.read(sessionLauncherProvider).resumeSession(
+    final session = await ref
+        .read(sessionLauncherProvider)
+        .resumeSession(
           record: record,
           preferences: ref.read(preferencesProvider),
         );
@@ -103,7 +112,9 @@ Future<void> openCommandTerminal(
   PreparedCommand prepared,
 ) async {
   await _launch(context, ref, () async {
-    final session = await ref.read(sessionLauncherProvider).runInteractive(
+    final session = await ref
+        .read(sessionLauncherProvider)
+        .runInteractive(
           prepared: prepared,
           preferences: ref.read(preferencesProvider),
         );
@@ -119,7 +130,9 @@ Future<void> attachTmuxSession(
   TmuxSession session,
 ) async {
   await _launch(context, ref, () async {
-    final terminal = await ref.read(sessionLauncherProvider).attachTmuxSession(
+    final terminal = await ref
+        .read(sessionLauncherProvider)
+        .attachTmuxSession(
           host: host,
           session: session,
           preferences: ref.read(preferencesProvider),
@@ -162,8 +175,9 @@ Future<void> _launch(
         context,
         hostname: failure.message,
         saved: parts.isNotEmpty ? parts.first.replaceFirst('Saved:\n', '') : '',
-        received:
-            parts.length > 1 ? parts[1].replaceFirst('Received:\n', '') : '',
+        received: parts.length > 1
+            ? parts[1].replaceFirst('Received:\n', '')
+            : '',
       );
       return;
     }

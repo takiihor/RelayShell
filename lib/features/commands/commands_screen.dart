@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../app/providers.dart';
-import '../../app/router/app_router.dart';
+import '../../core/providers.dart';
+import '../../shared/navigation/routes.dart';
 import '../../l10n/app_localizations.dart';
 import '../../shared/models/models.dart';
 import '../../shared/widgets/common.dart';
@@ -30,7 +30,7 @@ class CommandsScreen extends ConsumerWidget {
           ),
         ],
       ),
-      floatingActionButton: commands.valueOrNull?.isEmpty ?? true
+      floatingActionButton: commands.value?.isEmpty ?? true
           ? null
           : FloatingActionButton(
               heroTag: 'add-command',
@@ -55,8 +55,7 @@ class CommandsScreen extends ConsumerWidget {
             padding: const EdgeInsets.only(bottom: 96),
             itemCount: list.length,
             separatorBuilder: (_, _) => const Divider(height: 1),
-            itemBuilder: (context, index) =>
-                _CommandTile(command: list[index]),
+            itemBuilder: (context, index) => _CommandTile(command: list[index]),
           );
         },
       ),
@@ -104,9 +103,7 @@ class _CommandTile extends ConsumerWidget {
             command.command,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.bodySmall?.copyWith(
-              fontFamily: 'monospace',
-            ),
+            style: theme.textTheme.bodySmall?.copyWith(fontFamily: 'monospace'),
           ),
           Text(
             scopeLabel,
@@ -140,10 +137,7 @@ class _CommandTile extends ConsumerWidget {
         },
         itemBuilder: (context) => [
           PopupMenuItem(value: 'run', child: Text(l10n.actionRun)),
-          PopupMenuItem(
-            value: 'favorite',
-            child: Text(l10n.commandFavorite),
-          ),
+          PopupMenuItem(value: 'favorite', child: Text(l10n.commandFavorite)),
           PopupMenuItem(value: 'edit', child: Text(l10n.actionEdit)),
           PopupMenuItem(value: 'delete', child: Text(l10n.actionDelete)),
         ],

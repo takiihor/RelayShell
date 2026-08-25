@@ -51,9 +51,7 @@ class HostKeyTrustDialog extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(l10n.hostKeyBody(
-              '${request.hostname}:${request.port}',
-            )),
+            Text(l10n.hostKeyBody('${request.hostname}:${request.port}')),
             const SizedBox(height: 16),
             _Label(text: l10n.hostKeyType),
             Text(request.keyType, style: theme.textTheme.bodyMedium),
@@ -111,15 +109,14 @@ class HostKeyChangedDialog extends StatelessWidget {
     required String hostname,
     required String saved,
     required String received,
-  }) =>
-      showDialog<void>(
-        context: context,
-        builder: (context) => HostKeyChangedDialog(
-          hostname: hostname,
-          saved: saved,
-          received: received,
-        ),
-      );
+  }) => showDialog<void>(
+    context: context,
+    builder: (context) => HostKeyChangedDialog(
+      hostname: hostname,
+      saved: saved,
+      received: received,
+    ),
+  );
 
   @override
   Widget build(BuildContext context) {

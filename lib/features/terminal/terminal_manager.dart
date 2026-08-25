@@ -11,6 +11,18 @@ import '../../core/ssh/tmux_service.dart';
 import '../../shared/models/models.dart';
 import 'terminal_session.dart';
 
+/// Raised instead of silently terminating a live shell when every terminal
+/// slot is in use. The user can explicitly close the tab whose work is done.
+class TerminalTabLimitException implements Exception {
+  const TerminalTabLimitException();
+
+  @override
+  String toString() =>
+      'All $maxTabs terminal tabs are active. Close a terminal before opening another.';
+
+  static const int maxTabs = TerminalManager.maxTabs;
+}
+
 /// Holds every open terminal and which one is in front (SPEC 10.6).
 ///
 /// Tabs are capped, and the cap is a real product decision: each open terminal
@@ -30,8 +42,7 @@ class TerminalManager extends ChangeNotifier {
   final TmuxService tmux;
   final Uuid _uuid;
 
-  /// Beyond this, opening a new terminal closes the least recently used one
-  /// that is not currently attached.
+  /// Beyond this, opening a new terminal may close an inactive tab only.
   static const int maxTabs = 8;
 
   final List<TerminalSession> _tabs = [];
@@ -65,15 +76,14 @@ class TerminalManager extends ChangeNotifier {
   ///
   /// Resuming a session that is already on screen should focus that tab rather
   /// than opening a second client onto the same tmux session, which would make
-  /// both windows fight over the terminal size.
+  /// both windows fight over the terminal size. A disconnected tab still owns
+  /// the attachment and is returned so the caller can reconnect it.
   TerminalSession? findAttached({
     required String hostId,
     required String tmuxSessionName,
   }) {
     for (final tab in _tabs) {
-      if (tab.host.id == hostId &&
-          tab.tmuxSessionName == tmuxSessionName &&
-          tab.isLive) {
+      if (tab.host.id == hostId && tab.tmuxSessionName == tmuxSessionName) {
         return tab;
       }
     }
@@ -231,18 +241,23 @@ class TerminalManager extends ChangeNotifier {
     );
   }
 
-  /// Closes the least recently focused closable tab once the cap is reached.
+  /// Closes the least recently focused inactive tab once the cap is reached.
+  ///
+  /// A direct terminal can hold an irreversible foreground process, so a live
+  /// tab is never an eviction candidate. If every tab is live, the caller gets
+  /// an explicit error rather than losing remote work without consent.
   Future<void> _enforceTabLimit() async {
     if (_tabs.length < maxTabs) return;
 
-    final candidates = _tabs.where((tab) => tab.id != _activeId).toList()
-      ..sort((a, b) {
-        final aTime = _lastFocused[a.id] ?? DateTime(1970);
-        final bTime = _lastFocused[b.id] ?? DateTime(1970);
-        return aTime.compareTo(bTime);
-      });
+    final candidates =
+        _tabs.where((tab) => tab.id != _activeId && !tab.isLive).toList()
+          ..sort((a, b) {
+            final aTime = _lastFocused[a.id] ?? DateTime(1970);
+            final bTime = _lastFocused[b.id] ?? DateTime(1970);
+            return aTime.compareTo(bTime);
+          });
 
-    if (candidates.isEmpty) return;
+    if (candidates.isEmpty) throw const TerminalTabLimitException();
     await close(candidates.first.id);
   }
 

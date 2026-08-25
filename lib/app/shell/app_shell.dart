@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../features/terminal/terminal_providers.dart';
 import '../../l10n/app_localizations.dart';
-import '../router/app_router.dart';
+import '../../shared/navigation/routes.dart';
 
 /// The tabbed frame around the main sections (SPEC 6).
 ///
@@ -27,22 +27,22 @@ class AppShell extends ConsumerWidget {
       (
         icon: Icons.computer_outlined,
         selected: Icons.computer,
-        label: l10n.navComputers
+        label: l10n.navComputers,
       ),
       (
         icon: Icons.folder_special_outlined,
         selected: Icons.folder_special,
-        label: l10n.navProjects
+        label: l10n.navProjects,
       ),
       (
         icon: Icons.dashboard_outlined,
         selected: Icons.dashboard,
-        label: l10n.navSessions
+        label: l10n.navSessions,
       ),
       (
         icon: Icons.more_horiz_outlined,
         selected: Icons.more_horiz,
-        label: l10n.navMore
+        label: l10n.navMore,
       ),
     ];
 
@@ -142,24 +142,20 @@ class MoreScreen extends StatelessWidget {
       (
         icon: Icons.bolt_outlined,
         title: l10n.moreCommands,
-        route: Routes.commands
+        route: Routes.commands,
       ),
       (icon: Icons.key_outlined, title: l10n.moreKeys, route: Routes.keys),
       (
         icon: Icons.swap_horiz_outlined,
         title: l10n.moreForwarding,
-        route: Routes.forwarding
+        route: Routes.forwarding,
       ),
       (
         icon: Icons.settings_outlined,
         title: l10n.moreSettings,
-        route: Routes.settings
+        route: Routes.settings,
       ),
-      (
-        icon: Icons.info_outline,
-        title: l10n.moreAbout,
-        route: Routes.about
-      ),
+      (icon: Icons.info_outline, title: l10n.moreAbout, route: Routes.about),
     ];
 
     return Scaffold(

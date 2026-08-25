@@ -75,8 +75,9 @@ class Host {
       port: port ?? this.port,
       username: username ?? this.username,
       authMethod: authMethod ?? this.authMethod,
-      credentialId:
-          credentialId == _unset ? this.credentialId : credentialId as String?,
+      credentialId: credentialId == _unset
+          ? this.credentialId
+          : credentialId as String?,
       startupDirectory: startupDirectory == _unset
           ? this.startupDirectory
           : startupDirectory as String?,
@@ -95,61 +96,58 @@ class Host {
   }
 
   Map<String, Object?> toRow() => {
-        'id': id,
-        'name': name,
-        'hostname': hostname,
-        'port': port,
-        'username': username,
-        'auth_method': authMethod.storageValue,
-        'credential_id': credentialId,
-        'startup_directory': startupDirectory,
-        'environment_notes': environmentNotes,
-        'color_value': colorValue,
-        'platform': platform.storageValue,
-        'favorite': favorite ? 1 : 0,
-        'created_at': createdAt.millisecondsSinceEpoch,
-        'updated_at': updatedAt.millisecondsSinceEpoch,
-        'last_connected_at': lastConnectedAt?.millisecondsSinceEpoch,
-      };
+    'id': id,
+    'name': name,
+    'hostname': hostname,
+    'port': port,
+    'username': username,
+    'auth_method': authMethod.storageValue,
+    'credential_id': credentialId,
+    'startup_directory': startupDirectory,
+    'environment_notes': environmentNotes,
+    'color_value': colorValue,
+    'platform': platform.storageValue,
+    'favorite': favorite ? 1 : 0,
+    'created_at': createdAt.millisecondsSinceEpoch,
+    'updated_at': updatedAt.millisecondsSinceEpoch,
+    'last_connected_at': lastConnectedAt?.millisecondsSinceEpoch,
+  };
 
   factory Host.fromRow(Map<String, Object?> row) => Host(
-        id: row['id']! as String,
-        name: row['name']! as String,
-        hostname: row['hostname']! as String,
-        port: row['port']! as int,
-        username: row['username']! as String,
-        authMethod: AuthMethod.fromStorage(row['auth_method'] as String?),
-        credentialId: row['credential_id'] as String?,
-        startupDirectory: row['startup_directory'] as String?,
-        environmentNotes: row['environment_notes'] as String?,
-        colorValue: row['color_value'] as int?,
-        platform: RemotePlatform.fromStorage(row['platform'] as String?),
-        favorite: (row['favorite'] as int? ?? 0) == 1,
-        createdAt:
-            DateTime.fromMillisecondsSinceEpoch(row['created_at']! as int),
-        updatedAt:
-            DateTime.fromMillisecondsSinceEpoch(row['updated_at']! as int),
-        lastConnectedAt: row['last_connected_at'] == null
-            ? null
-            : DateTime.fromMillisecondsSinceEpoch(
-                row['last_connected_at']! as int),
-      );
+    id: row['id']! as String,
+    name: row['name']! as String,
+    hostname: row['hostname']! as String,
+    port: row['port']! as int,
+    username: row['username']! as String,
+    authMethod: AuthMethod.fromStorage(row['auth_method'] as String?),
+    credentialId: row['credential_id'] as String?,
+    startupDirectory: row['startup_directory'] as String?,
+    environmentNotes: row['environment_notes'] as String?,
+    colorValue: row['color_value'] as int?,
+    platform: RemotePlatform.fromStorage(row['platform'] as String?),
+    favorite: (row['favorite'] as int? ?? 0) == 1,
+    createdAt: DateTime.fromMillisecondsSinceEpoch(row['created_at']! as int),
+    updatedAt: DateTime.fromMillisecondsSinceEpoch(row['updated_at']! as int),
+    lastConnectedAt: row['last_connected_at'] == null
+        ? null
+        : DateTime.fromMillisecondsSinceEpoch(row['last_connected_at']! as int),
+  );
 
   /// Export representation. Deliberately omits [credentialId] so that a config
   /// export can never imply possession of a secret (SPEC 22).
   Map<String, Object?> toExportJson() => {
-        'id': id,
-        'name': name,
-        'hostname': hostname,
-        'port': port,
-        'username': username,
-        'auth_method': authMethod.storageValue,
-        'startup_directory': startupDirectory,
-        'environment_notes': environmentNotes,
-        'color_value': colorValue,
-        'platform': platform.storageValue,
-        'favorite': favorite,
-      };
+    'id': id,
+    'name': name,
+    'hostname': hostname,
+    'port': port,
+    'username': username,
+    'auth_method': authMethod.storageValue,
+    'startup_directory': startupDirectory,
+    'environment_notes': environmentNotes,
+    'color_value': colorValue,
+    'platform': platform.storageValue,
+    'favorite': favorite,
+  };
 
   factory Host.fromExportJson(Map<String, Object?> json, {required String id}) {
     final now = DateTime.now();

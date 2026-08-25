@@ -22,7 +22,8 @@ after''';
     });
 
     test('removes an RSA private key block', () {
-      const log = '-----BEGIN RSA PRIVATE KEY-----\nMIIE\n-----END RSA PRIVATE KEY-----';
+      const log =
+          '-----BEGIN RSA PRIVATE KEY-----\nMIIE\n-----END RSA PRIVATE KEY-----';
       expect(redactor.scrub(log), isNot(contains('MIIE')));
     });
 

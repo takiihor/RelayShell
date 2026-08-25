@@ -1,4 +1,4 @@
-# SPEC.md — Remote Dev Console
+# SPEC.md — RelayShell
 
 **Status:** Product / Engineering Specification  
 **Target:** Android + iOS  
@@ -10,7 +10,7 @@
 
 ## 1. Product Summary
 
-Remote Dev Console is a mobile-first application for controlling development computers and servers through SSH.
+RelayShell is a mobile-first application for controlling development computers and servers through SSH.
 
 The product is not intended to reproduce a full Linux environment on the phone. Instead, the phone acts as a fast, convenient control surface for a user's existing Windows, macOS, Linux, VPS, NAS, or development machine.
 
@@ -28,7 +28,7 @@ Session
 Action
 ```
 
-A traditional SSH client starts with a blank terminal. Remote Dev Console starts with what the user actually wants to do:
+A traditional SSH client starts with a blank terminal. RelayShell starts with what the user actually wants to do:
 
 - open a computer;
 - resume a working session;
@@ -56,7 +56,7 @@ The terminal remains a first-class feature, but it is not the entire product.
 7. Keep all critical user data local by default.
 8. Provide strong key and host-verification security.
 9. Be usable by both developers and technically capable server users.
-10. Remain useful without requiring any Remote Dev Console server account.
+10. Remain useful without requiring any RelayShell server account.
 
 ### 2.2 Non-goals
 
@@ -121,7 +121,7 @@ Whenever possible:
 Mobile App → SSH → User Computer
 ```
 
-No Remote Dev Console cloud service is required for terminal traffic.
+No RelayShell cloud service is required for terminal traffic.
 
 ### 4.3 Session persistence
 
@@ -1760,7 +1760,7 @@ These stages are implementation order only. They do not redefine the product as 
 
 The following should require a new product decision rather than quietly expanding the architecture:
 
-- Remote Dev Console user accounts
+- RelayShell user accounts
 - proprietary backend
 - cloud credential sync
 - team sharing
@@ -1778,7 +1778,7 @@ The current architecture should not prevent future expansion, but it should not 
 
 # 48. Product Definition
 
-Remote Dev Console should be judged by this question:
+RelayShell should be judged by this question:
 
 > Can a user take out a phone, reach the correct computer/project/session, perform useful development or server work with minimal typing, put the phone away, and later continue safely?
 

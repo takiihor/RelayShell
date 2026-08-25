@@ -110,10 +110,7 @@ void main() {
     test('inserts values verbatim, without quoting', () {
       // Documented behaviour: a saved command is intentional shell input, and
       // the caller quotes if it is building the command itself (SPEC 29).
-      final result = resolver.resolve(
-        'echo {{input:x}}',
-        inputs: {'x': 'a b'},
-      );
+      final result = resolver.resolve('echo {{input:x}}', inputs: {'x': 'a b'});
       expect(result.command, 'echo a b');
     });
   });

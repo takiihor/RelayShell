@@ -16,10 +16,7 @@ void main() {
     test('removes characters tmux treats as addressing syntax', () {
       // tmux uses `:` and `.` for window/pane targets, so a name containing
       // them would address something else entirely.
-      expect(
-        TmuxCommandBuilder.sanitizeNameComponent('a:b.c'),
-        'a-b-c',
-      );
+      expect(TmuxCommandBuilder.sanitizeNameComponent('a:b.c'), 'a-b-c');
     });
 
     test('trims leading and trailing separators', () {
@@ -32,10 +29,7 @@ void main() {
     });
 
     test('handles non-ASCII by reducing it to separators', () {
-      expect(
-        TmuxCommandBuilder.sanitizeNameComponent('中文 project'),
-        'project',
-      );
+      expect(TmuxCommandBuilder.sanitizeNameComponent('中文 project'), 'project');
     });
   });
 
@@ -53,7 +47,10 @@ void main() {
 
     test('omits an absent or blank action', () {
       expect(
-        TmuxCommandBuilder.managedSessionName(prefix: 'rdc', subject: 'Home PC'),
+        TmuxCommandBuilder.managedSessionName(
+          prefix: 'rdc',
+          subject: 'Home PC',
+        ),
         'rdc-home-pc',
       );
       expect(
@@ -202,18 +199,19 @@ void main() {
 
   group('TmuxSession', () {
     test('recognises sessions this app manages', () {
-      const managed =
-          TmuxSession(name: 'rdc-api', windows: 1, attached: false);
-      const foreign =
-          TmuxSession(name: 'my-own-session', windows: 1, attached: false);
+      const managed = TmuxSession(name: 'rdc-api', windows: 1, attached: false);
+      const foreign = TmuxSession(
+        name: 'my-own-session',
+        windows: 1,
+        attached: false,
+      );
 
       expect(managed.isManagedBy('rdc'), isTrue);
       expect(foreign.isManagedBy('rdc'), isFalse);
     });
 
     test('does not treat a prefix substring as managed', () {
-      const other =
-          TmuxSession(name: 'rdcextra', windows: 1, attached: false);
+      const other = TmuxSession(name: 'rdcextra', windows: 1, attached: false);
       expect(other.isManagedBy('rdc'), isFalse);
     });
   });

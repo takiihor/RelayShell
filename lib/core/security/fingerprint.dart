@@ -79,7 +79,10 @@ class Fingerprint {
     for (var i = 0; i < body.length; i += groupSize) {
       if (i > 0) buffer.write(' ');
       buffer.write(
-        body.substring(i, i + groupSize > body.length ? body.length : i + groupSize),
+        body.substring(
+          i,
+          i + groupSize > body.length ? body.length : i + groupSize,
+        ),
       );
     }
     return buffer.toString();

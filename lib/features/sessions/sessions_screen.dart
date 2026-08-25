@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../app/providers.dart';
-import '../../app/router/app_router.dart';
+import '../../core/providers.dart';
+import '../../shared/navigation/routes.dart';
 import '../../core/shell/tmux.dart';
 import '../../core/ssh/ssh_failure.dart';
 import '../../core/ssh/tmux_service.dart';
@@ -29,7 +29,7 @@ class SessionsScreen extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final sessions = ref.watch(sessionRecordsProvider);
     final terminals = ref.watch(terminalManagerProvider);
-    final hosts = ref.watch(hostsProvider).valueOrNull ?? const [];
+    final hosts = ref.watch(hostsProvider).value ?? const [];
 
     return Scaffold(
       appBar: AppBar(
@@ -113,7 +113,7 @@ class _SessionTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
-    final host = ref.watch(hostProvider(record.hostId)).valueOrNull;
+    final host = ref.watch(hostProvider(record.hostId)).value;
 
     return ListTile(
       leading: Icon(

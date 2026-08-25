@@ -91,16 +91,12 @@ class ConnectionManager {
     _connections[host.id] = connection;
     _notify();
 
-    connection.statusStream.listen(
-      (status) {
-        _notify();
-        if (status.state == SshConnectionState.failed &&
-            status.failure != null) {
-          _considerAutoReconnect(host, status);
-        }
-      },
-      onError: (_) => _notify(),
-    );
+    connection.statusStream.listen((status) {
+      _notify();
+      if (status.state == SshConnectionState.failed && status.failure != null) {
+        _considerAutoReconnect(host, status);
+      }
+    }, onError: (_) => _notify());
 
     try {
       await connection.connect();
@@ -239,7 +235,9 @@ class ReachabilityProbe {
     required Future<bool> Function(String hostname, int port) check,
     Duration timeout = const Duration(seconds: 4),
   }) async {
-    if (_inFlight.contains(host.id) || _inFlight.length >= maxConcurrent) return;
+    if (_inFlight.contains(host.id) || _inFlight.length >= maxConcurrent) {
+      return;
+    }
 
     _inFlight.add(host.id);
     _results[host.id] = HostReachability.checking;
@@ -247,8 +245,9 @@ class ReachabilityProbe {
 
     try {
       final reachable = await check(host.hostname, host.port).timeout(timeout);
-      _results[host.id] =
-          reachable ? HostReachability.reachable : HostReachability.unreachable;
+      _results[host.id] = reachable
+          ? HostReachability.reachable
+          : HostReachability.unreachable;
     } catch (_) {
       _results[host.id] = HostReachability.unreachable;
     } finally {

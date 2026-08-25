@@ -8,11 +8,11 @@
 	     Required: without it iOS refuses the Face ID request outright
 	     (SPEC 18.3, 19). -->
 	<key>NSFaceIDUsageDescription</key>
-	<string>Remote Dev Console uses Face ID to unlock the app and to authorise use of your saved SSH credentials.</string>
+	<string>RelayShell uses Face ID to unlock the app and to authorise use of your saved SSH credentials.</string>
 	<!-- Local networking, so an SSH host on the same Wi-Fi (a home PC or NAS)
 	     can be reached and Wake-on-LAN packets can be broadcast (SPEC 17). -->
 	<key>NSLocalNetworkUsageDescription</key>
-	<string>Remote Dev Console connects to computers on your local network over SSH.</string>
+	<string>RelayShell connects to computers on your local network over SSH.</string>
 	<!-- Terminal work is landscape-friendly, and an external keyboard on an
 	     iPad is a supported setup (SPEC 5, 37). -->
 	<key>UIRequiresFullScreen</key>
@@ -20,7 +20,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Remote Dev Console</string>
+	<string>RelayShell</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>

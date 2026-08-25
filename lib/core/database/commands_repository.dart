@@ -56,8 +56,7 @@ class CommandsRepository extends Repository {
   Stream<List<SavedCommand>> watchVisibleIn({
     String? hostId,
     String? projectId,
-  }) =>
-      watch(() => visibleIn(hostId: hostId, projectId: projectId));
+  }) => watch(() => visibleIn(hostId: hostId, projectId: projectId));
 
   Future<List<SavedCommand>> forProject(String projectId) async {
     final rows = await db.query(
@@ -97,8 +96,12 @@ class CommandsRepository extends Repository {
       watch(() => favorites(limit: limit));
 
   Future<SavedCommand?> byId(String id) async {
-    final rows =
-        await db.query(table, where: 'id = ?', whereArgs: [id], limit: 1);
+    final rows = await db.query(
+      table,
+      where: 'id = ?',
+      whereArgs: [id],
+      limit: 1,
+    );
     if (rows.isEmpty) return null;
     return SavedCommand.fromRow(rows.first);
   }

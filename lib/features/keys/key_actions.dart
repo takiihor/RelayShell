@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
-import '../../app/providers.dart';
+import '../../core/providers.dart';
 import '../../core/security/ssh_key_material.dart';
 import '../../core/storage/secret_store.dart';
 import '../../l10n/app_localizations.dart';
@@ -98,7 +98,9 @@ Future<void> importPrivateKey(BuildContext context, WidgetRef ref) async {
   );
   if (name == null || !context.mounted) return;
 
-  final requireBiometric = ref.read(preferencesProvider).credentialBiometricDefault;
+  final requireBiometric = ref
+      .read(preferencesProvider)
+      .credentialBiometricDefault;
   final id = const Uuid().v4();
   final now = DateTime.now();
 
@@ -108,7 +110,9 @@ Future<void> importPrivateKey(BuildContext context, WidgetRef ref) async {
     await secrets.write(SecretKind.passphrase, id, passphrase);
   }
 
-  await ref.read(credentialsRepositoryProvider).upsert(
+  await ref
+      .read(credentialsRepositoryProvider)
+      .upsert(
         Credential(
           id: id,
           name: name,
@@ -137,20 +141,22 @@ Future<void> generateKey(BuildContext context, WidgetRef ref) async {
   );
   if (name == null || !context.mounted) return;
 
-  final generated = ref.read(keyMaterialProvider).generateEd25519(
+  final generated = ref
+      .read(keyMaterialProvider)
+      .generateEd25519(
         comment: name.replaceAll(RegExp(r'\s+'), '-').toLowerCase(),
       );
 
   final id = const Uuid().v4();
   final now = DateTime.now();
 
-  await ref.read(secretStoreProvider).write(
-        SecretKind.privateKey,
-        id,
-        generated.privateKeyPem,
-      );
+  await ref
+      .read(secretStoreProvider)
+      .write(SecretKind.privateKey, id, generated.privateKeyPem);
 
-  await ref.read(credentialsRepositoryProvider).upsert(
+  await ref
+      .read(credentialsRepositoryProvider)
+      .upsert(
         Credential(
           id: id,
           name: name,
@@ -158,8 +164,9 @@ Future<void> generateKey(BuildContext context, WidgetRef ref) async {
           publicKey: generated.description.publicKey,
           keyType: generated.description.keyType,
           fingerprintSha256: generated.description.fingerprintSha256,
-          requireBiometric:
-              ref.read(preferencesProvider).credentialBiometricDefault,
+          requireBiometric: ref
+              .read(preferencesProvider)
+              .credentialBiometricDefault,
           createdAt: now,
           updatedAt: now,
         ),
@@ -214,13 +221,16 @@ Future<void> savePassword(BuildContext context, WidgetRef ref) async {
   final now = DateTime.now();
 
   await ref.read(secretStoreProvider).write(SecretKind.password, id, result.$2);
-  await ref.read(credentialsRepositoryProvider).upsert(
+  await ref
+      .read(credentialsRepositoryProvider)
+      .upsert(
         Credential(
           id: id,
           name: result.$1,
           type: CredentialType.password,
-          requireBiometric:
-              ref.read(preferencesProvider).credentialBiometricDefault,
+          requireBiometric: ref
+              .read(preferencesProvider)
+              .credentialBiometricDefault,
           createdAt: now,
           updatedAt: now,
         ),
@@ -269,7 +279,9 @@ Future<void> copyPublicKey(
   final l10n = AppLocalizations.of(context);
   final preferences = ref.read(preferencesProvider);
 
-  await ref.read(clipboardGuardProvider).copySensitive(
+  await ref
+      .read(clipboardGuardProvider)
+      .copySensitive(
         publicKey,
         clearAfter: preferences.clearClipboardAfterSecrets
             ? Duration(seconds: preferences.clearClipboardSeconds)
@@ -323,10 +335,7 @@ Future<String?> _obtainKeyText(BuildContext context) async {
   );
 }
 
-Future<String?> _askPassphrase(
-  BuildContext context, {
-  bool retry = false,
-}) {
+Future<String?> _askPassphrase(BuildContext context, {bool retry = false}) {
   return showDialog<String>(
     context: context,
     builder: (context) => _PassphraseDialog(retry: retry),
@@ -426,10 +435,10 @@ class _PassphraseDialogState extends State<_PassphraseDialog> {
           Text(
             widget.retry ? l10n.keyPassphraseWrong : l10n.keyPassphraseRequired,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: widget.retry
-                      ? Theme.of(context).colorScheme.error
-                      : Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
+              color: widget.retry
+                  ? Theme.of(context).colorScheme.error
+                  : Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
           const SizedBox(height: 16),
           TextField(

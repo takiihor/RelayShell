@@ -45,11 +45,7 @@ typedef KeyboardInteractivePrompt = Future<List<String>?> Function(
 /// [Sensitive] wrappers make an accidental interpolation produce a placeholder
 /// rather than the secret (SPEC 35, 44.2).
 class ResolvedCredential {
-  ResolvedCredential({
-    this.identities,
-    this.password,
-    this.onUserInfoRequest,
-  });
+  ResolvedCredential({this.identities, this.password, this.onUserInfoRequest});
 
   final List<SSHKeyPair>? identities;
   final Sensitive<String>? password;
@@ -238,9 +234,11 @@ class CredentialResolver {
       case BiometricResult.unavailable:
         throw SshFailure(
           kind: SshFailureKind.authorizationRequired,
-          message: '"${credential.name}" requires device authentication, '
+          message:
+              '"${credential.name}" requires device authentication, '
               'which is not set up on this device.',
-          action: 'Set up a screen lock, or turn off protection for this '
+          action:
+              'Set up a screen lock, or turn off protection for this '
               'credential.',
         );
       case BiometricResult.lockedOut:

@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../app/providers.dart';
-import '../../app/router/app_router.dart';
+import '../../core/providers.dart';
+import '../../shared/navigation/routes.dart';
 import '../../l10n/app_localizations.dart';
 import '../../shared/models/models.dart';
 import '../../shared/utilities/formatting.dart';
@@ -126,86 +126,76 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             child: !_searched
                 ? const SizedBox.shrink()
                 : !_hasResults
-                    ? EmptyState(
-                        icon: Icons.search_off,
-                        title: l10n.searchEmpty,
-                        body: l10n.searchLocalOnly,
-                      )
-                    : ListView(
-                        padding: const EdgeInsets.only(bottom: 32),
-                        children: [
-                          if (_hosts.isNotEmpty) ...[
-                            SectionHeader(title: l10n.searchSectionComputers),
-                            for (final host in _hosts)
-                              ListTile(
-                                leading: const Icon(Icons.computer_outlined),
-                                title: Text(host.name),
-                                subtitle: Text(host.displaySubtitle),
-                                onTap: () =>
-                                    context.go(Routes.hostDetail(host.id)),
-                              ),
-                          ],
-                          if (_projects.isNotEmpty) ...[
-                            SectionHeader(title: l10n.searchSectionProjects),
-                            for (final project in _projects)
-                              ListTile(
-                                leading:
-                                    const Icon(Icons.folder_special_outlined),
-                                title: Text(project.name),
-                                subtitle: Text(
-                                  shortenPath(project.remotePath),
-                                  style: const TextStyle(
-                                    fontFamily: 'monospace',
-                                  ),
-                                ),
-                                onTap: () => context
-                                    .go(Routes.projectDetail(project.id)),
-                              ),
-                          ],
-                          if (_commands.isNotEmpty) ...[
-                            SectionHeader(title: l10n.searchSectionCommands),
-                            for (final command in _commands)
-                              ListTile(
-                                leading: Icon(
-                                  command.isInteractive
-                                      ? Icons.terminal
-                                      : Icons.play_arrow_outlined,
-                                ),
-                                title: Text(command.name),
-                                subtitle: Text(
-                                  command.command,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                    fontFamily: 'monospace',
-                                  ),
-                                ),
-                                onTap: () =>
-                                    runSavedCommand(context, ref, command),
-                              ),
-                          ],
-                          if (_sessions.isNotEmpty) ...[
-                            SectionHeader(title: l10n.searchSectionSessions),
-                            for (final session in _sessions)
-                              ListTile(
-                                leading: Icon(
-                                  session.isPersistent
-                                      ? Icons.play_circle_outline
-                                      : Icons.terminal,
-                                ),
-                                title: Text(session.displayName),
-                                subtitle: Text(
-                                  formatRelativeTime(l10n, session.lastUsedAt),
-                                ),
-                                onTap: () => resumeSessionRecord(
-                                  context,
-                                  ref,
-                                  session,
-                                ),
-                              ),
-                          ],
-                        ],
-                      ),
+                ? EmptyState(
+                    icon: Icons.search_off,
+                    title: l10n.searchEmpty,
+                    body: l10n.searchLocalOnly,
+                  )
+                : ListView(
+                    padding: const EdgeInsets.only(bottom: 32),
+                    children: [
+                      if (_hosts.isNotEmpty) ...[
+                        SectionHeader(title: l10n.searchSectionComputers),
+                        for (final host in _hosts)
+                          ListTile(
+                            leading: const Icon(Icons.computer_outlined),
+                            title: Text(host.name),
+                            subtitle: Text(host.displaySubtitle),
+                            onTap: () => context.go(Routes.hostDetail(host.id)),
+                          ),
+                      ],
+                      if (_projects.isNotEmpty) ...[
+                        SectionHeader(title: l10n.searchSectionProjects),
+                        for (final project in _projects)
+                          ListTile(
+                            leading: const Icon(Icons.folder_special_outlined),
+                            title: Text(project.name),
+                            subtitle: Text(
+                              shortenPath(project.remotePath),
+                              style: const TextStyle(fontFamily: 'monospace'),
+                            ),
+                            onTap: () =>
+                                context.go(Routes.projectDetail(project.id)),
+                          ),
+                      ],
+                      if (_commands.isNotEmpty) ...[
+                        SectionHeader(title: l10n.searchSectionCommands),
+                        for (final command in _commands)
+                          ListTile(
+                            leading: Icon(
+                              command.isInteractive
+                                  ? Icons.terminal
+                                  : Icons.play_arrow_outlined,
+                            ),
+                            title: Text(command.name),
+                            subtitle: Text(
+                              command.command,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(fontFamily: 'monospace'),
+                            ),
+                            onTap: () => runSavedCommand(context, ref, command),
+                          ),
+                      ],
+                      if (_sessions.isNotEmpty) ...[
+                        SectionHeader(title: l10n.searchSectionSessions),
+                        for (final session in _sessions)
+                          ListTile(
+                            leading: Icon(
+                              session.isPersistent
+                                  ? Icons.play_circle_outline
+                                  : Icons.terminal,
+                            ),
+                            title: Text(session.displayName),
+                            subtitle: Text(
+                              formatRelativeTime(l10n, session.lastUsedAt),
+                            ),
+                            onTap: () =>
+                                resumeSessionRecord(context, ref, session),
+                          ),
+                      ],
+                    ],
+                  ),
           ),
         ],
       ),

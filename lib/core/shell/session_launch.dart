@@ -72,22 +72,13 @@ class SessionLaunchBuilder {
   }
 
   /// Interactive shell that runs [command] after changing directory.
-  SessionLaunchPlan directCommand(
-    String command, {
-    String? workingDirectory,
-  }) {
-    final buffer = StringBuffer();
-    if (workingDirectory != null && workingDirectory.isNotEmpty) {
-      buffer
-        ..write(quoter.changeDirectory(workingDirectory))
-        ..write('\n');
-    }
-    buffer
-      ..write(command)
-      ..write('\n');
+  SessionLaunchPlan directCommand(String command, {String? workingDirectory}) {
+    final input = workingDirectory == null || workingDirectory.isEmpty
+        ? command
+        : quoter.andThen(quoter.changeDirectory(workingDirectory), command);
     return SessionLaunchPlan(
       mode: SessionMode.direct,
-      initialInput: buffer.toString(),
+      initialInput: '$input\n',
       workingDirectory: workingDirectory,
     );
   }
@@ -143,11 +134,10 @@ class SessionLaunchBuilder {
     required String subject,
     String? action,
     Set<String> existingNames = const {},
-  }) =>
-      TmuxCommandBuilder.managedSessionName(
-        prefix: prefix,
-        subject: subject,
-        action: action,
-        existingNames: existingNames,
-      );
+  }) => TmuxCommandBuilder.managedSessionName(
+    prefix: prefix,
+    subject: subject,
+    action: action,
+    existingNames: existingNames,
+  );
 }

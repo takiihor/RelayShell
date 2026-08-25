@@ -1,5 +1,5 @@
 name: relayshell
-description: Remote Dev Console - a mobile control center for remote development over SSH.
+description: RelayShell - a mobile control center for remote development over SSH.
 publish_to: 'none'
 version: 1.0.0+1
 
@@ -15,9 +15,9 @@ dependencies:
     sdk: flutter
   flutter_localizations:
     sdk: flutter
-  flutter_riverpod: ^2.6.1
-  flutter_secure_storage: ^10.0.0
-  go_router: ^17.5.0
+  flutter_riverpod: ^3.4.2
+  flutter_secure_storage: ^11.0.0
+  go_router: ^18.0.0
   intl: ^0.20.3
   local_auth: ^3.0.2
   package_info_plus: ^10.2.1

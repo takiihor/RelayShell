@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
+import 'package:sqflite/sqflite.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../shared/models/models.dart';
@@ -36,7 +37,8 @@ class ImportSummary {
   /// Non-fatal problems, e.g. a project whose host was not in the file.
   final List<String> warnings;
 
-  int get total => hosts + projects + commands + forwards + sessions + wolProfiles;
+  int get total =>
+      hosts + projects + commands + forwards + sessions + wolProfiles;
 }
 
 /// Raised when a backup file cannot be read.
@@ -101,8 +103,9 @@ class ConfigTransfer {
       'hosts': allHosts.map((host) => host.toExportJson()).toList(),
       'projects': allProjects.map((project) => project.toExportJson()).toList(),
       'commands': allCommands.map((command) => command.toExportJson()).toList(),
-      'port_forwards':
-          allForwards.map((forward) => forward.toExportJson()).toList(),
+      'port_forwards': allForwards
+          .map((forward) => forward.toExportJson())
+          .toList(),
       'wol_profiles': allWol.map((profile) => profile.toExportJson()).toList(),
       'sessions': allSessions.map((session) => session.toExportJson()).toList(),
       'preferences': prefs.toMap(),
@@ -137,7 +140,7 @@ class ConfigTransfer {
       final decoded = jsonDecode(jsonText);
       if (decoded is! Map<String, Object?>) {
         throw const ConfigImportException(
-          'That file is not a Remote Dev Console backup.',
+          'That file is not a RelayShell backup.',
         );
       }
       document = decoded;
@@ -147,7 +150,7 @@ class ConfigTransfer {
 
     if (document['format'] != formatName) {
       throw const ConfigImportException(
-        'That file is not a Remote Dev Console backup.',
+        'That file is not a RelayShell backup.',
       );
     }
     final version = (document['version'] as num?)?.toInt() ?? 0;
@@ -158,173 +161,210 @@ class ConfigTransfer {
       );
     }
 
-    final warnings = <String>[];
-    final hostIdMap = <String, String>{};
-    final projectIdMap = <String, String>{};
+    late final ImportSummary summary;
+    try {
+      summary = await hosts.database.transaction((txn) async {
+        final warnings = <String>[];
+        final hostIdMap = <String, String>{};
+        final projectIdMap = <String, String>{};
 
-    var hostCount = 0;
-    for (final entry in _listOf(document['hosts'])) {
-      final oldId = entry['id'] as String?;
-      final newId = _uuid.v4();
-      final host = Host.fromExportJson(entry, id: newId);
-      if (host.hostname.isEmpty || host.username.isEmpty) {
-        warnings.add('Skipped a computer with no hostname or username.');
-        continue;
-      }
-      await hosts.upsert(host);
-      if (oldId != null) hostIdMap[oldId] = newId;
-      hostCount++;
-    }
+        var hostCount = 0;
+        for (final entry in _listOf(document['hosts'])) {
+          final oldId = entry['id'] as String?;
+          final newId = _uuid.v4();
+          final host = Host.fromExportJson(entry, id: newId);
+          if (host.hostname.isEmpty || host.username.isEmpty) {
+            warnings.add('Skipped a computer with no hostname or username.');
+            continue;
+          }
+          await txn.insert(HostsRepository.table, host.toRow());
+          if (oldId != null) hostIdMap[oldId] = newId;
+          hostCount++;
+        }
 
-    var projectCount = 0;
-    for (final entry in _listOf(document['projects'])) {
-      final oldId = entry['id'] as String?;
-      final oldHostId = entry['host_id'] as String?;
-      final newHostId = oldHostId == null ? null : hostIdMap[oldHostId];
-      if (newHostId == null) {
-        warnings.add(
-          'Skipped project "${entry['name'] ?? 'unnamed'}" because its '
-          'computer was not in the backup.',
+        var projectCount = 0;
+        for (final entry in _listOf(document['projects'])) {
+          final oldId = entry['id'] as String?;
+          final oldHostId = entry['host_id'] as String?;
+          final newHostId = oldHostId == null ? null : hostIdMap[oldHostId];
+          if (newHostId == null) {
+            warnings.add(
+              'Skipped project "${entry['name'] ?? 'unnamed'}" because its '
+              'computer was not in the backup.',
+            );
+            continue;
+          }
+          final newId = _uuid.v4();
+          await txn.insert(
+            ProjectsRepository.table,
+            Project.fromExportJson(entry, id: newId, hostId: newHostId).toRow(),
+          );
+          if (oldId != null) projectIdMap[oldId] = newId;
+          projectCount++;
+        }
+
+        var commandCount = 0;
+        for (final entry in _listOf(document['commands'])) {
+          final scope = CommandScope.fromStorage(entry['scope'] as String?);
+          final oldHostId = entry['host_id'] as String?;
+          final oldProjectId = entry['project_id'] as String?;
+          final newHostId = oldHostId == null ? null : hostIdMap[oldHostId];
+          final newProjectId = oldProjectId == null
+              ? null
+              : projectIdMap[oldProjectId];
+
+          // A scoped command whose owner did not survive would become invisible;
+          // promote it to global so the user keeps the command itself.
+          var effectiveScope = scope;
+          if (scope == CommandScope.host && newHostId == null) {
+            effectiveScope = CommandScope.global;
+            warnings.add(
+              'Command "${entry['name'] ?? 'unnamed'}" became a global command '
+              'because its computer was not in the backup.',
+            );
+          }
+          if (scope == CommandScope.project && newProjectId == null) {
+            effectiveScope = CommandScope.global;
+            warnings.add(
+              'Command "${entry['name'] ?? 'unnamed'}" became a global command '
+              'because its project was not in the backup.',
+            );
+          }
+
+          final command = SavedCommand.fromExportJson(
+            entry,
+            id: _uuid.v4(),
+            hostId: effectiveScope == CommandScope.host ? newHostId : null,
+            projectId: effectiveScope == CommandScope.project
+                ? newProjectId
+                : null,
+          ).copyWith(scope: effectiveScope);
+
+          if (command.command.trim().isEmpty) {
+            warnings.add('Skipped an empty command.');
+            continue;
+          }
+          await txn.insert(CommandsRepository.table, command.toRow());
+          commandCount++;
+        }
+
+        var forwardCount = 0;
+        for (final entry in _listOf(document['port_forwards'])) {
+          final oldHostId = entry['host_id'] as String?;
+          final newHostId = oldHostId == null ? null : hostIdMap[oldHostId];
+          if (newHostId == null) continue;
+          final now = DateTime.now();
+          await txn.insert(
+            ForwardsRepository.table,
+            PortForwardProfile(
+              id: _uuid.v4(),
+              hostId: newHostId,
+              name: (entry['name'] as String?) ?? 'Imported forward',
+              type: ForwardType.fromStorage(entry['type'] as String?),
+              listenPort: (entry['listen_port'] as num?)?.toInt() ?? 0,
+              listenAddress:
+                  (entry['listen_address'] as String?) ?? '127.0.0.1',
+              targetHost: entry['target_host'] as String?,
+              targetPort: (entry['target_port'] as num?)?.toInt(),
+              autoStart: entry['auto_start'] == true,
+              createdAt: now,
+              updatedAt: now,
+            ).toRow(),
+          );
+          forwardCount++;
+        }
+
+        var wolCount = 0;
+        for (final entry in _listOf(document['wol_profiles'])) {
+          final oldHostId = entry['host_id'] as String?;
+          final newHostId = oldHostId == null ? null : hostIdMap[oldHostId];
+          final mac = entry['mac_address'] as String?;
+          if (newHostId == null || mac == null) continue;
+          await txn.insert(
+            WolRepository.table,
+            WolProfile(
+              hostId: newHostId,
+              macAddress: mac,
+              broadcastAddress:
+                  (entry['broadcast_address'] as String?) ?? '255.255.255.255',
+              port: (entry['port'] as num?)?.toInt() ?? 9,
+            ).toRow(),
+          );
+          wolCount++;
+        }
+
+        var sessionCount = 0;
+        for (final entry in _listOf(document['sessions'])) {
+          final oldHostId = entry['host_id'] as String?;
+          final newHostId = oldHostId == null ? null : hostIdMap[oldHostId];
+          if (newHostId == null) continue;
+          final oldProjectId = entry['project_id'] as String?;
+          final now = DateTime.now();
+          await txn.insert(
+            SessionsRepository.table,
+            SessionRecord(
+              id: _uuid.v4(),
+              hostId: newHostId,
+              projectId: oldProjectId == null
+                  ? null
+                  : projectIdMap[oldProjectId],
+              tmuxSessionName: entry['tmux_session_name'] as String?,
+              displayName:
+                  (entry['display_name'] as String?) ?? 'Imported session',
+              mode: SessionMode.fromStorage(entry['mode'] as String?),
+              workingDirectory: entry['working_directory'] as String?,
+              createdAt: now,
+              lastUsedAt: now,
+            ).toRow(),
+          );
+          sessionCount++;
+        }
+
+        var preferencesRestored = false;
+        if (includePreferences) {
+          final raw = document['preferences'];
+          if (raw is Map) {
+            final map = <String, String>{
+              for (final entry in raw.entries)
+                entry.key.toString(): entry.value.toString(),
+            };
+            for (final entry in AppPreferences.fromMap(map).toMap().entries) {
+              await txn.insert(PreferencesRepository.table, {
+                'key': entry.key,
+                'value': entry.value,
+              }, conflictAlgorithm: ConflictAlgorithm.replace);
+            }
+            preferencesRestored = true;
+          }
+        }
+
+        return ImportSummary(
+          hosts: hostCount,
+          projects: projectCount,
+          commands: commandCount,
+          forwards: forwardCount,
+          sessions: sessionCount,
+          wolProfiles: wolCount,
+          preferencesRestored: preferencesRestored,
+          warnings: warnings,
         );
-        continue;
-      }
-      final newId = _uuid.v4();
-      await projects.upsert(
-        Project.fromExportJson(entry, id: newId, hostId: newHostId),
+      });
+    } on ConfigImportException {
+      rethrow;
+    } on Object {
+      throw const ConfigImportException(
+        'That backup contains invalid configuration data.',
       );
-      if (oldId != null) projectIdMap[oldId] = newId;
-      projectCount++;
     }
 
-    var commandCount = 0;
-    for (final entry in _listOf(document['commands'])) {
-      final scope = CommandScope.fromStorage(entry['scope'] as String?);
-      final oldHostId = entry['host_id'] as String?;
-      final oldProjectId = entry['project_id'] as String?;
-      final newHostId = oldHostId == null ? null : hostIdMap[oldHostId];
-      final newProjectId = oldProjectId == null ? null : projectIdMap[oldProjectId];
-
-      // A scoped command whose owner did not survive would become invisible;
-      // promote it to global so the user keeps the command itself.
-      var effectiveScope = scope;
-      if (scope == CommandScope.host && newHostId == null) {
-        effectiveScope = CommandScope.global;
-        warnings.add(
-          'Command "${entry['name'] ?? 'unnamed'}" became a global command '
-          'because its computer was not in the backup.',
-        );
-      }
-      if (scope == CommandScope.project && newProjectId == null) {
-        effectiveScope = CommandScope.global;
-        warnings.add(
-          'Command "${entry['name'] ?? 'unnamed'}" became a global command '
-          'because its project was not in the backup.',
-        );
-      }
-
-      final command = SavedCommand.fromExportJson(
-        entry,
-        id: _uuid.v4(),
-        hostId: effectiveScope == CommandScope.host ? newHostId : null,
-        projectId: effectiveScope == CommandScope.project ? newProjectId : null,
-      ).copyWith(scope: effectiveScope);
-
-      if (command.command.trim().isEmpty) {
-        warnings.add('Skipped an empty command.');
-        continue;
-      }
-      await commands.upsert(command);
-      commandCount++;
-    }
-
-    var forwardCount = 0;
-    for (final entry in _listOf(document['port_forwards'])) {
-      final oldHostId = entry['host_id'] as String?;
-      final newHostId = oldHostId == null ? null : hostIdMap[oldHostId];
-      if (newHostId == null) continue;
-      final now = DateTime.now();
-      await forwards.upsert(
-        PortForwardProfile(
-          id: _uuid.v4(),
-          hostId: newHostId,
-          name: (entry['name'] as String?) ?? 'Imported forward',
-          type: ForwardType.fromStorage(entry['type'] as String?),
-          listenPort: (entry['listen_port'] as num?)?.toInt() ?? 0,
-          listenAddress: (entry['listen_address'] as String?) ?? '127.0.0.1',
-          targetHost: entry['target_host'] as String?,
-          targetPort: (entry['target_port'] as num?)?.toInt(),
-          autoStart: entry['auto_start'] == true,
-          createdAt: now,
-          updatedAt: now,
-        ),
-      );
-      forwardCount++;
-    }
-
-    var wolCount = 0;
-    for (final entry in _listOf(document['wol_profiles'])) {
-      final oldHostId = entry['host_id'] as String?;
-      final newHostId = oldHostId == null ? null : hostIdMap[oldHostId];
-      final mac = entry['mac_address'] as String?;
-      if (newHostId == null || mac == null) continue;
-      await wol.upsert(
-        WolProfile(
-          hostId: newHostId,
-          macAddress: mac,
-          broadcastAddress:
-              (entry['broadcast_address'] as String?) ?? '255.255.255.255',
-          port: (entry['port'] as num?)?.toInt() ?? 9,
-        ),
-      );
-      wolCount++;
-    }
-
-    var sessionCount = 0;
-    for (final entry in _listOf(document['sessions'])) {
-      final oldHostId = entry['host_id'] as String?;
-      final newHostId = oldHostId == null ? null : hostIdMap[oldHostId];
-      if (newHostId == null) continue;
-      final oldProjectId = entry['project_id'] as String?;
-      final now = DateTime.now();
-      await sessions.upsert(
-        SessionRecord(
-          id: _uuid.v4(),
-          hostId: newHostId,
-          projectId: oldProjectId == null ? null : projectIdMap[oldProjectId],
-          tmuxSessionName: entry['tmux_session_name'] as String?,
-          displayName: (entry['display_name'] as String?) ?? 'Imported session',
-          mode: SessionMode.fromStorage(entry['mode'] as String?),
-          workingDirectory: entry['working_directory'] as String?,
-          createdAt: now,
-          lastUsedAt: now,
-        ),
-      );
-      sessionCount++;
-    }
-
-    var preferencesRestored = false;
-    if (includePreferences) {
-      final raw = document['preferences'];
-      if (raw is Map) {
-        final map = <String, String>{
-          for (final entry in raw.entries)
-            entry.key.toString(): entry.value.toString(),
-        };
-        await preferences.save(AppPreferences.fromMap(map));
-        preferencesRestored = true;
-      }
-    }
-
-    return ImportSummary(
-      hosts: hostCount,
-      projects: projectCount,
-      commands: commandCount,
-      forwards: forwardCount,
-      sessions: sessionCount,
-      wolProfiles: wolCount,
-      preferencesRestored: preferencesRestored,
-      warnings: warnings,
-    );
+    hosts.notifyChanged();
+    projects.notifyChanged();
+    commands.notifyChanged();
+    forwards.notifyChanged();
+    wol.notifyChanged();
+    sessions.notifyChanged();
+    preferences.notifyChanged();
+    return summary;
   }
 
   static List<Map<String, Object?>> _listOf(Object? value) {

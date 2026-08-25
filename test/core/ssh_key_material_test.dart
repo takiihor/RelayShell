@@ -24,10 +24,7 @@ void main() {
       expect(generated.description.keyType, 'ssh-ed25519');
       expect(generated.description.publicKey, startsWith('ssh-ed25519 '));
       expect(generated.description.publicKey, endsWith(' phone'));
-      expect(
-        generated.description.fingerprintSha256,
-        startsWith('SHA256:'),
-      );
+      expect(generated.description.fingerprintSha256, startsWith('SHA256:'));
       expect(generated.description.isEncrypted, isFalse);
     });
 
@@ -64,10 +61,7 @@ void main() {
     });
 
     test('refuses an empty string', () {
-      expect(
-        () => material.describe(''),
-        throwsA(isA<KeyMaterialException>()),
-      );
+      expect(() => material.describe(''), throwsA(isA<KeyMaterialException>()));
     });
 
     test('refuses a truncated key', () {
@@ -105,15 +99,22 @@ void main() {
       // ssh-keygen refuses world-readable private keys.
       await Process.run('chmod', ['600', keyFile.path]);
 
-      final derived = await Process.run('ssh-keygen', ['-y', '-f', keyFile.path]);
+      final derived = await Process.run('ssh-keygen', [
+        '-y',
+        '-f',
+        keyFile.path,
+      ]);
       expect(derived.exitCode, 0, reason: derived.stderr.toString());
       expect(
         (derived.stdout as String).trim(),
         generated.description.publicKey.trim(),
       );
 
-      final fingerprint =
-          await Process.run('ssh-keygen', ['-l', '-f', keyFile.path]);
+      final fingerprint = await Process.run('ssh-keygen', [
+        '-l',
+        '-f',
+        keyFile.path,
+      ]);
       expect(fingerprint.exitCode, 0, reason: fingerprint.stderr.toString());
       expect(
         fingerprint.stdout as String,

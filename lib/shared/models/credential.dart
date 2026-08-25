@@ -56,49 +56,46 @@ class Credential {
     bool? hasPassphrase,
     bool? requireBiometric,
     DateTime? updatedAt,
-  }) =>
-      Credential(
-        id: id,
-        name: name ?? this.name,
-        type: type,
-        publicKey: publicKey == _unset ? this.publicKey : publicKey as String?,
-        keyType: keyType == _unset ? this.keyType : keyType as String?,
-        fingerprintSha256: fingerprintSha256 == _unset
-            ? this.fingerprintSha256
-            : fingerprintSha256 as String?,
-        hasPassphrase: hasPassphrase ?? this.hasPassphrase,
-        requireBiometric: requireBiometric ?? this.requireBiometric,
-        createdAt: createdAt,
-        updatedAt: updatedAt ?? DateTime.now(),
-      );
+  }) => Credential(
+    id: id,
+    name: name ?? this.name,
+    type: type,
+    publicKey: publicKey == _unset ? this.publicKey : publicKey as String?,
+    keyType: keyType == _unset ? this.keyType : keyType as String?,
+    fingerprintSha256: fingerprintSha256 == _unset
+        ? this.fingerprintSha256
+        : fingerprintSha256 as String?,
+    hasPassphrase: hasPassphrase ?? this.hasPassphrase,
+    requireBiometric: requireBiometric ?? this.requireBiometric,
+    createdAt: createdAt,
+    updatedAt: updatedAt ?? DateTime.now(),
+  );
 
   Map<String, Object?> toRow() => {
-        'id': id,
-        'name': name,
-        'type': type.storageValue,
-        'public_key': publicKey,
-        'key_type': keyType,
-        'fingerprint_sha256': fingerprintSha256,
-        'has_passphrase': hasPassphrase ? 1 : 0,
-        'require_biometric': requireBiometric ? 1 : 0,
-        'created_at': createdAt.millisecondsSinceEpoch,
-        'updated_at': updatedAt.millisecondsSinceEpoch,
-      };
+    'id': id,
+    'name': name,
+    'type': type.storageValue,
+    'public_key': publicKey,
+    'key_type': keyType,
+    'fingerprint_sha256': fingerprintSha256,
+    'has_passphrase': hasPassphrase ? 1 : 0,
+    'require_biometric': requireBiometric ? 1 : 0,
+    'created_at': createdAt.millisecondsSinceEpoch,
+    'updated_at': updatedAt.millisecondsSinceEpoch,
+  };
 
   factory Credential.fromRow(Map<String, Object?> row) => Credential(
-        id: row['id']! as String,
-        name: row['name']! as String,
-        type: CredentialType.fromStorage(row['type'] as String?),
-        publicKey: row['public_key'] as String?,
-        keyType: row['key_type'] as String?,
-        fingerprintSha256: row['fingerprint_sha256'] as String?,
-        hasPassphrase: (row['has_passphrase'] as int? ?? 0) == 1,
-        requireBiometric: (row['require_biometric'] as int? ?? 0) == 1,
-        createdAt:
-            DateTime.fromMillisecondsSinceEpoch(row['created_at']! as int),
-        updatedAt:
-            DateTime.fromMillisecondsSinceEpoch(row['updated_at']! as int),
-      );
+    id: row['id']! as String,
+    name: row['name']! as String,
+    type: CredentialType.fromStorage(row['type'] as String?),
+    publicKey: row['public_key'] as String?,
+    keyType: row['key_type'] as String?,
+    fingerprintSha256: row['fingerprint_sha256'] as String?,
+    hasPassphrase: (row['has_passphrase'] as int? ?? 0) == 1,
+    requireBiometric: (row['require_biometric'] as int? ?? 0) == 1,
+    createdAt: DateTime.fromMillisecondsSinceEpoch(row['created_at']! as int),
+    updatedAt: DateTime.fromMillisecondsSinceEpoch(row['updated_at']! as int),
+  );
 
   @override
   bool operator ==(Object other) => other is Credential && other.id == id;

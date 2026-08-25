@@ -9,9 +9,9 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
-import '../../app/providers.dart';
-import '../../app/router/app_router.dart';
-import '../../app/theme/terminal_themes.dart';
+import '../../core/providers.dart';
+import '../../shared/navigation/routes.dart';
+import '../../shared/theme/terminal_themes.dart';
 import '../../core/storage/config_transfer.dart';
 import '../../l10n/app_localizations.dart';
 import '../../shared/models/models.dart';
@@ -27,7 +27,7 @@ class SettingsScreen extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final preferences = ref.watch(preferencesProvider);
     final controller = ref.read(preferencesProvider.notifier);
-    final trustedKeys = ref.watch(trustedKeysProvider).valueOrNull ?? const [];
+    final trustedKeys = ref.watch(trustedKeysProvider).value ?? const [];
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.settingsTitle)),
@@ -84,8 +84,9 @@ class SettingsScreen extends ConsumerWidget {
               ],
               onChanged: (value) => value == null
                   ? null
-                  : controller
-                      .edit((c) => c.copyWith(terminalFontFamily: value)),
+                  : controller.edit(
+                      (c) => c.copyWith(terminalFontFamily: value),
+                    ),
             ),
           ),
           _SliderTile(
@@ -142,8 +143,9 @@ class SettingsScreen extends ConsumerWidget {
             max: 20000,
             divisions: 99,
             label: l10n.settingsLines(preferences.scrollbackLines),
-            onChanged: (value) => controller
-                .edit((c) => c.copyWith(scrollbackLines: value.round())),
+            onChanged: (value) => controller.edit(
+              (c) => c.copyWith(scrollbackLines: value.round()),
+            ),
           ),
           ListTile(
             title: Text(l10n.settingsAccessoryKeys),
@@ -164,8 +166,9 @@ class SettingsScreen extends ConsumerWidget {
           SwitchListTile(
             title: Text(l10n.settingsPasteConfirm),
             value: preferences.confirmMultilinePaste,
-            onChanged: (value) => controller
-                .edit((c) => c.copyWith(confirmMultilinePaste: value)),
+            onChanged: (value) => controller.edit(
+              (c) => c.copyWith(confirmMultilinePaste: value),
+            ),
           ),
           ListTile(
             title: Text(l10n.settingsDefaultSession),
@@ -184,8 +187,9 @@ class SettingsScreen extends ConsumerWidget {
               ],
               onChanged: (value) => value == null
                   ? null
-                  : controller
-                      .edit((c) => c.copyWith(defaultSessionMode: value)),
+                  : controller.edit(
+                      (c) => c.copyWith(defaultSessionMode: value),
+                    ),
             ),
           ),
 
@@ -197,8 +201,9 @@ class SettingsScreen extends ConsumerWidget {
             max: 120,
             divisions: 23,
             label: l10n.settingsSeconds(preferences.keepaliveSeconds),
-            onChanged: (value) => controller
-                .edit((c) => c.copyWith(keepaliveSeconds: value.round())),
+            onChanged: (value) => controller.edit(
+              (c) => c.copyWith(keepaliveSeconds: value.round()),
+            ),
           ),
           _SliderTile(
             title: l10n.settingsConnectTimeout,
@@ -207,8 +212,9 @@ class SettingsScreen extends ConsumerWidget {
             max: 60,
             divisions: 11,
             label: l10n.settingsSeconds(preferences.connectTimeoutSeconds),
-            onChanged: (value) => controller
-                .edit((c) => c.copyWith(connectTimeoutSeconds: value.round())),
+            onChanged: (value) => controller.edit(
+              (c) => c.copyWith(connectTimeoutSeconds: value.round()),
+            ),
           ),
           _SliderTile(
             title: l10n.settingsAuthTimeout,
@@ -217,8 +223,9 @@ class SettingsScreen extends ConsumerWidget {
             max: 120,
             divisions: 11,
             label: l10n.settingsSeconds(preferences.authTimeoutSeconds),
-            onChanged: (value) => controller
-                .edit((c) => c.copyWith(authTimeoutSeconds: value.round())),
+            onChanged: (value) => controller.edit(
+              (c) => c.copyWith(authTimeoutSeconds: value.round()),
+            ),
           ),
           ListTile(
             title: Text(l10n.settingsTerminalType),
@@ -259,8 +266,9 @@ class SettingsScreen extends ConsumerWidget {
               ],
               onChanged: (value) => value == null
                   ? null
-                  : controller
-                      .edit((c) => c.copyWith(reconnectBehavior: value)),
+                  : controller.edit(
+                      (c) => c.copyWith(reconnectBehavior: value),
+                    ),
             ),
           ),
           ListTile(
@@ -306,15 +314,15 @@ class SettingsScreen extends ConsumerWidget {
                 ],
                 onChanged: (value) => value == null
                     ? null
-                    : controller
-                        .edit((c) => c.copyWith(appLockTimeout: value)),
+                    : controller.edit((c) => c.copyWith(appLockTimeout: value)),
               ),
             ),
           SwitchListTile(
             title: Text(l10n.settingsCredentialBiometric),
             value: preferences.credentialBiometricDefault,
-            onChanged: (value) => controller
-                .edit((c) => c.copyWith(credentialBiometricDefault: value)),
+            onChanged: (value) => controller.edit(
+              (c) => c.copyWith(credentialBiometricDefault: value),
+            ),
           ),
           ListTile(
             title: Text(l10n.settingsTrustedKeys),
@@ -325,8 +333,9 @@ class SettingsScreen extends ConsumerWidget {
           SwitchListTile(
             title: Text(l10n.settingsClearClipboard),
             value: preferences.clearClipboardAfterSecrets,
-            onChanged: (value) => controller
-                .edit((c) => c.copyWith(clearClipboardAfterSecrets: value)),
+            onChanged: (value) => controller.edit(
+              (c) => c.copyWith(clearClipboardAfterSecrets: value),
+            ),
           ),
 
           SectionHeader(title: l10n.settingsData),
@@ -371,7 +380,10 @@ class SettingsScreen extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
 
     if (value) {
-      final available = await ref.read(appServicesProvider).biometrics.isAvailable;
+      final available = await ref
+          .read(appServicesProvider)
+          .biometrics
+          .isAvailable;
       if (!context.mounted) return;
       if (!available) {
         showMessage(context, l10n.settingsAppLockHelp, isError: true);
@@ -390,8 +402,9 @@ class SettingsScreen extends ConsumerWidget {
     AppPreferences preferences,
   ) async {
     final l10n = AppLocalizations.of(context);
-    final controller =
-        TextEditingController(text: preferences.tmuxSessionPrefix);
+    final controller = TextEditingController(
+      text: preferences.tmuxSessionPrefix,
+    );
 
     final value = await showDialog<String>(
       context: context,
@@ -428,7 +441,9 @@ class SettingsScreen extends ConsumerWidget {
 
     final json = await ref.read(configTransferProvider).exportToJson();
     final directory = await getTemporaryDirectory();
-    final file = File(p.join(directory.path, ConfigTransfer.suggestedFileName()));
+    final file = File(
+      p.join(directory.path, ConfigTransfer.suggestedFileName()),
+    );
     await file.writeAsString(json);
 
     if (!context.mounted) return;
@@ -455,9 +470,9 @@ class SettingsScreen extends ConsumerWidget {
 
     try {
       final bytes = await picked.readAsBytes();
-      final summary = await ref.read(configTransferProvider).import(
-            utf8.decode(bytes, allowMalformed: true),
-          );
+      final summary = await ref
+          .read(configTransferProvider)
+          .import(utf8.decode(bytes, allowMalformed: true));
       if (!context.mounted) return;
 
       if (summary.warnings.isEmpty) {
@@ -495,7 +510,9 @@ class SettingsScreen extends ConsumerWidget {
     } on ConfigImportException catch (error) {
       if (context.mounted) showMessage(context, error.message, isError: true);
     } catch (_) {
-      if (context.mounted) showMessage(context, l10n.importFailed, isError: true);
+      if (context.mounted) {
+        showMessage(context, l10n.importFailed, isError: true);
+      }
     }
   }
 

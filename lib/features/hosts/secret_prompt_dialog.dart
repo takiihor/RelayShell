@@ -17,12 +17,11 @@ class SecretPromptDialog extends StatefulWidget {
   static Future<Sensitive<String>?> show(
     BuildContext context,
     SecretPromptRequest request,
-  ) =>
-      showDialog<Sensitive<String>>(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => SecretPromptDialog(request: request),
-      );
+  ) => showDialog<Sensitive<String>>(
+    context: context,
+    barrierDismissible: false,
+    builder: (context) => SecretPromptDialog(request: request),
+  );
 
   @override
   State<SecretPromptDialog> createState() => _SecretPromptDialogState();
@@ -49,10 +48,11 @@ class _SecretPromptDialogState extends State<SecretPromptDialog> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final isPassphrase =
-        widget.request.kind == SecretPromptKind.passphrase;
+    final isPassphrase = widget.request.kind == SecretPromptKind.passphrase;
 
-    final title = isPassphrase ? l10n.keyFieldPassphrase : l10n.keyFieldPassword;
+    final title = isPassphrase
+        ? l10n.keyFieldPassphrase
+        : l10n.keyFieldPassword;
     final subtitle = widget.request.credentialName == null
         ? widget.request.hostName
         : '${widget.request.credentialName} · ${widget.request.hostName}';
@@ -66,16 +66,15 @@ class _SecretPromptDialogState extends State<SecretPromptDialog> {
           Text(
             subtitle,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
           if (widget.request.retry) ...[
             const SizedBox(height: 8),
             Text(
               l10n.keyPassphraseWrong,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.error,
-                  ),
+              style: Theme.of(context).textTheme.bodySmall
+                  ?.copyWith(color: Theme.of(context).colorScheme.error),
             ),
           ],
           const SizedBox(height: 16),
@@ -91,7 +90,9 @@ class _SecretPromptDialogState extends State<SecretPromptDialog> {
               labelText: title,
               suffixIcon: IconButton(
                 icon: Icon(
-                  _obscured ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                  _obscured
+                      ? Icons.visibility_outlined
+                      : Icons.visibility_off_outlined,
                 ),
                 onPressed: () => setState(() => _obscured = !_obscured),
               ),
@@ -122,12 +123,11 @@ class KeyboardInteractiveDialog extends StatefulWidget {
   static Future<List<String>?> show(
     BuildContext context,
     SSHUserInfoRequest request,
-  ) =>
-      showDialog<List<String>>(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => KeyboardInteractiveDialog(request: request),
-      );
+  ) => showDialog<List<String>>(
+    context: context,
+    barrierDismissible: false,
+    builder: (context) => KeyboardInteractiveDialog(request: request),
+  );
 
   @override
   State<KeyboardInteractiveDialog> createState() =>
@@ -151,9 +151,8 @@ class _KeyboardInteractiveDialogState extends State<KeyboardInteractiveDialog> {
   }
 
   void _submit() {
-    Navigator.of(context).pop(
-      _controllers.map((controller) => controller.text).toList(),
-    );
+    Navigator.of(context)
+        .pop(_controllers.map((controller) => controller.text).toList());
   }
 
   @override

@@ -108,8 +108,10 @@ void main() {
         isTrue,
       );
       expect(
-        const SshFailure(kind: SshFailureKind.timeout, message: 'x')
-            .needsUserFix,
+        const SshFailure(
+          kind: SshFailureKind.timeout,
+          message: 'x',
+        ).needsUserFix,
         isFalse,
       );
     });
@@ -149,36 +151,41 @@ void main() {
     });
   });
 
-  group('SshFailure.from distinguishes handshake timeout from real mismatch', () {
-    // dartssh2 raises SSHHandshakeError for every handshake-phase failure,
-    // including its own internal timeout — which fires if the user takes
-    // longer than the old handshakeTimeout to approve an unknown host key
-    // (a real incident: see ssh_connection.dart, handshakeTimeout is
-    // deliberately omitted for exactly this reason). Reporting that as
-    // "unsupported algorithms" sends the user chasing the wrong cause.
-    test('a timeout is reported as a timeout, not an algorithm mismatch', () {
-      final failure = SshFailure.from(
-        SSHHandshakeError('Handshake timed out'),
-        hostname: 'example.com',
-        port: 22,
-      );
-      expect(failure.kind, SshFailureKind.timeout);
-      expect(failure.message, contains('timed out'));
-      expect(failure.message, isNot(contains('agree')));
-      expect(failure.isRetryable, isTrue);
-    });
+  group(
+    'SshFailure.from distinguishes handshake timeout from real mismatch',
+    () {
+      // dartssh2 raises SSHHandshakeError for every handshake-phase failure,
+      // including its own internal timeout — which fires if the user takes
+      // longer than the old handshakeTimeout to approve an unknown host key
+      // (a real incident: see ssh_connection.dart, handshakeTimeout is
+      // deliberately omitted for exactly this reason). Reporting that as
+      // "unsupported algorithms" sends the user chasing the wrong cause.
+      test('a timeout is reported as a timeout, not an algorithm mismatch', () {
+        final failure = SshFailure.from(
+          SSHHandshakeError('Handshake timed out'),
+          hostname: 'example.com',
+          port: 22,
+        );
+        expect(failure.kind, SshFailureKind.timeout);
+        expect(failure.message, contains('timed out'));
+        expect(failure.message, isNot(contains('agree')));
+        expect(failure.isRetryable, isTrue);
+      });
 
-    test('a non-timeout handshake error still reports an algorithm mismatch',
+      test(
+        'a non-timeout handshake error still reports an algorithm mismatch',
         () {
-      final failure = SshFailure.from(
-        SSHHandshakeError('no matching key exchange method found'),
-        hostname: 'example.com',
-        port: 22,
+          final failure = SshFailure.from(
+            SSHHandshakeError('no matching key exchange method found'),
+            hostname: 'example.com',
+            port: 22,
+          );
+          expect(failure.kind, SshFailureKind.handshakeFailed);
+          expect(failure.message, contains('agree'));
+        },
       );
-      expect(failure.kind, SshFailureKind.handshakeFailed);
-      expect(failure.message, contains('agree'));
-    });
-  });
+    },
+  );
 
   group('SshFailure.hostKeyChanged', () {
     test('states both fingerprints and that the connection was blocked', () {

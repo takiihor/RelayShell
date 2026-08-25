@@ -75,6 +75,7 @@ class TerminalSession extends ChangeNotifier {
   StreamSubscription<Uint8List>? _stdout;
   StreamSubscription<Uint8List>? _stderr;
   StreamSubscription<SshConnectionStatus>? _connectionStatus;
+  bool _restoringAfterReconnect = false;
 
   TerminalSessionState _state = TerminalSessionState.starting;
   TerminalSessionState get state => _state;
@@ -230,7 +231,42 @@ class TerminalSession extends ChangeNotifier {
         _writeSystemLine(status.failure?.message ?? 'Connection lost.');
         _setState(TerminalSessionState.disconnected);
       }
+      if (status.state == SshConnectionState.connected &&
+          _state == TerminalSessionState.disconnected) {
+        unawaited(_restoreAfterAutoReconnect(connection));
+      }
     });
+  }
+
+  /// Reopens the channel after [ConnectionManager] restores the shared SSH
+  /// transport. Persistent tabs reattach to their existing tmux session;
+  /// direct tabs get a new shell, which is all that can survive a dropped
+  /// network connection.
+  Future<void> _restoreAfterAutoReconnect(SshConnection connection) async {
+    if (_restoringAfterReconnect ||
+        _state != TerminalSessionState.disconnected) {
+      return;
+    }
+    _restoringAfterReconnect = true;
+    _writeSystemLine('Connection restored. Reattaching…');
+    _setState(TerminalSessionState.starting);
+
+    try {
+      await _detachShell();
+      await _openShell(connection);
+      _failure = null;
+      _exitCode = null;
+      _setState(TerminalSessionState.running);
+    } catch (error) {
+      final failure = error is SshFailure
+          ? error
+          : SshFailure.from(error, hostname: host.hostname, port: host.port);
+      _failure = failure;
+      _writeSystemLine(failure.message);
+      _setState(TerminalSessionState.failed);
+    } finally {
+      _restoringAfterReconnect = false;
+    }
   }
 
   /// Reconnects and, for a persistent session, reattaches to the same tmux
@@ -242,6 +278,7 @@ class TerminalSession extends ChangeNotifier {
     _writeSystemLine('Reconnecting…');
     _setState(TerminalSessionState.starting);
 
+    _restoringAfterReconnect = true;
     try {
       final connection = await connections.reconnect(host);
       _watchConnection(connection);
@@ -249,10 +286,15 @@ class TerminalSession extends ChangeNotifier {
       _failure = null;
       _exitCode = null;
       _setState(TerminalSessionState.running);
-    } on SshFailure catch (failure) {
+    } catch (error) {
+      final failure = error is SshFailure
+          ? error
+          : SshFailure.from(error, hostname: host.hostname, port: host.port);
       _failure = failure;
       _writeSystemLine(failure.message);
       _setState(TerminalSessionState.failed);
+    } finally {
+      _restoringAfterReconnect = false;
     }
   }
 

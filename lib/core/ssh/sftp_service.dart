@@ -119,7 +119,8 @@ class SftpService {
   }
 
   /// The user's home directory on the remote machine.
-  Future<String> homeDirectory(SshConnection connection) => resolve(connection, '.');
+  Future<String> homeDirectory(SshConnection connection) =>
+      resolve(connection, '.');
 
   /// Lists [path], sorted directories-first then by name.
   ///
@@ -174,11 +175,7 @@ class SftpService {
     }
   }
 
-  Future<void> rename(
-    SshConnection connection,
-    String from,
-    String to,
-  ) async {
+  Future<void> rename(SshConnection connection, String from, String to) async {
     final sftp = await _client(connection);
     try {
       await sftp.rename(from, to);
@@ -292,7 +289,8 @@ class SftpService {
           );
         }
       }
-      return const Utf8Decoder(allowMalformed: true).convert(builder.takeBytes());
+      return const Utf8Decoder(allowMalformed: true)
+          .convert(builder.takeBytes());
     } finally {
       await file.close();
     }
@@ -307,7 +305,8 @@ class SftpService {
     final sftp = await _client(connection);
     final file = await sftp.open(
       path,
-      mode: SftpFileOpenMode.write |
+      mode:
+          SftpFileOpenMode.write |
           SftpFileOpenMode.create |
           SftpFileOpenMode.truncate,
     );
@@ -415,7 +414,8 @@ class SftpService {
         final sftp = await _client(connection);
         file = await sftp.open(
           remotePath,
-          mode: SftpFileOpenMode.write |
+          mode:
+              SftpFileOpenMode.write |
               SftpFileOpenMode.create |
               SftpFileOpenMode.truncate,
         );
@@ -473,7 +473,10 @@ class SftpService {
     );
   }
 
-  static RemoteFile _toRemoteFile(SftpName entry, {required String parentPath}) {
+  static RemoteFile _toRemoteFile(
+    SftpName entry, {
+    required String parentPath,
+  }) {
     final attrs = entry.attr;
     return RemoteFile(
       name: entry.filename,
@@ -524,7 +527,9 @@ class SftpService {
       size /= 1024;
       unit++;
     }
-    final rounded = unit == 0 ? size.toStringAsFixed(0) : size.toStringAsFixed(1);
+    final rounded = unit == 0
+        ? size.toStringAsFixed(0)
+        : size.toStringAsFixed(1);
     return '$rounded ${units[unit]}';
   }
 

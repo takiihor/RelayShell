@@ -86,8 +86,9 @@ class _TransferSheetState extends State<_TransferSheet> {
                 error is FileOperationException
                     ? error.message
                     : l10n.filesTransferFailed,
-                style: theme.textTheme.bodyMedium
-                    ?.copyWith(color: theme.colorScheme.error),
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.error,
+                ),
               ),
               const SizedBox(height: 16),
               FilledButton(

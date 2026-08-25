@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../app/providers.dart';
+import '../../core/providers.dart';
 import '../../core/shell/command_variables.dart';
 import '../../l10n/app_localizations.dart';
 import '../../shared/models/models.dart';
@@ -30,13 +30,13 @@ Future<void> runSavedCommand(
 
   // Resolve the command's own scope first; it is more specific than context.
   if (command.projectId != null && targetProject == null) {
-    targetProject = await ref.read(projectsRepositoryProvider).byId(
-          command.projectId!,
-        );
+    targetProject = await ref
+        .read(projectsRepositoryProvider)
+        .byId(command.projectId!);
     if (targetProject != null) {
-      targetHost = await ref.read(hostsRepositoryProvider).byId(
-            targetProject.hostId,
-          );
+      targetHost = await ref
+          .read(hostsRepositoryProvider)
+          .byId(targetProject.hostId);
     }
   } else if (command.hostId != null && targetHost == null) {
     targetHost = await ref.read(hostsRepositoryProvider).byId(command.hostId!);
@@ -146,10 +146,8 @@ Future<Map<String, String>?> _collectInputs(
 ) {
   return showDialog<Map<String, String>>(
     context: context,
-    builder: (context) => _InputCollectorDialog(
-      commandName: commandName,
-      requests: requests,
-    ),
+    builder: (context) =>
+        _InputCollectorDialog(commandName: commandName, requests: requests),
   );
 }
 
@@ -193,8 +191,8 @@ class _InputCollectorDialogState extends State<_InputCollectorDialog> {
             Text(
               widget.commandName,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
             const SizedBox(height: 16),
             for (var i = 0; i < widget.requests.length; i++) ...[
@@ -217,7 +215,8 @@ class _InputCollectorDialogState extends State<_InputCollectorDialog> {
         ),
         FilledButton(
           onPressed: () => Navigator.of(context).pop({
-            for (final entry in _controllers.entries) entry.key: entry.value.text,
+            for (final entry in _controllers.entries)
+              entry.key: entry.value.text,
           }),
           child: Text(l10n.actionContinue),
         ),
@@ -335,6 +334,8 @@ Future<void> _runOneShot(
     context: context,
     isScrollControlled: true,
     showDragHandle: true,
+    isDismissible: false,
+    enableDrag: false,
     builder: (context) => _OneShotSheet(prepared: prepared, launcher: launcher),
   );
 
@@ -357,6 +358,7 @@ class _OneShotSheet extends StatefulWidget {
 class _OneShotSheetState extends State<_OneShotSheet> {
   OneShotResult? _result;
   Object? _error;
+  OneShotExecution? _execution;
 
   @override
   void initState() {
@@ -370,7 +372,9 @@ class _OneShotSheetState extends State<_OneShotSheet> {
       _error = null;
     });
     try {
-      final result = await widget.launcher.runOneShot(prepared: widget.prepared);
+      final execution = widget.launcher.startOneShot(prepared: widget.prepared);
+      _execution = execution;
+      final result = await execution.completion;
       if (mounted) setState(() => _result = result);
     } catch (error) {
       if (mounted) setState(() => _error = error);
@@ -431,19 +435,20 @@ class _OneShotSheetState extends State<_OneShotSheet> {
               child: SingleChildScrollView(
                 child: switch ((result, _error)) {
                   (null, null) => const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 32),
-                      child: LoadingView(),
-                    ),
+                    padding: EdgeInsets.symmetric(vertical: 32),
+                    child: LoadingView(),
+                  ),
                   (_, final Object error) => Text(
-                      error.toString(),
-                      style: theme.textTheme.bodyMedium
-                          ?.copyWith(color: theme.colorScheme.error),
+                    error.toString(),
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.error,
                     ),
+                  ),
                   (final OneShotResult value, _) => CodeBlock(
-                      text: value.output.trim().isEmpty
-                          ? l10n.commandNoOutput
-                          : value.output.trimRight(),
-                    ),
+                    text: value.output.trim().isEmpty
+                        ? l10n.commandNoOutput
+                        : value.output.trimRight(),
+                  ),
                 },
               ),
             ),
@@ -460,8 +465,17 @@ class _OneShotSheetState extends State<_OneShotSheet> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: FilledButton(
-                    onPressed: () => Navigator.of(context).pop(_result),
-                    child: Text(l10n.actionClose),
+                    onPressed: _result == null && _error == null
+                        ? () {
+                            _execution?.cancel();
+                            Navigator.of(context).pop();
+                          }
+                        : () => Navigator.of(context).pop(_result),
+                    child: Text(
+                      _result == null && _error == null
+                          ? l10n.actionCancel
+                          : l10n.actionClose,
+                    ),
                   ),
                 ),
               ],

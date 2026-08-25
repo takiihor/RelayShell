@@ -58,63 +58,61 @@ class PortForwardProfile {
     int? targetPort,
     bool? autoStart,
     DateTime? updatedAt,
-  }) =>
-      PortForwardProfile(
-        id: id,
-        hostId: hostId,
-        name: name ?? this.name,
-        type: type ?? this.type,
-        listenPort: listenPort ?? this.listenPort,
-        listenAddress: listenAddress ?? this.listenAddress,
-        targetHost: targetHost ?? this.targetHost,
-        targetPort: targetPort ?? this.targetPort,
-        autoStart: autoStart ?? this.autoStart,
-        createdAt: createdAt,
-        updatedAt: updatedAt ?? DateTime.now(),
-      );
+  }) => PortForwardProfile(
+    id: id,
+    hostId: hostId,
+    name: name ?? this.name,
+    type: type ?? this.type,
+    listenPort: listenPort ?? this.listenPort,
+    listenAddress: listenAddress ?? this.listenAddress,
+    targetHost: targetHost ?? this.targetHost,
+    targetPort: targetPort ?? this.targetPort,
+    autoStart: autoStart ?? this.autoStart,
+    createdAt: createdAt,
+    updatedAt: updatedAt ?? DateTime.now(),
+  );
 
   Map<String, Object?> toRow() => {
-        'id': id,
-        'host_id': hostId,
-        'name': name,
-        'type': type.storageValue,
-        'listen_port': listenPort,
-        'listen_address': listenAddress,
-        'target_host': targetHost,
-        'target_port': targetPort,
-        'auto_start': autoStart ? 1 : 0,
-        'created_at': createdAt.millisecondsSinceEpoch,
-        'updated_at': updatedAt.millisecondsSinceEpoch,
-      };
+    'id': id,
+    'host_id': hostId,
+    'name': name,
+    'type': type.storageValue,
+    'listen_port': listenPort,
+    'listen_address': listenAddress,
+    'target_host': targetHost,
+    'target_port': targetPort,
+    'auto_start': autoStart ? 1 : 0,
+    'created_at': createdAt.millisecondsSinceEpoch,
+    'updated_at': updatedAt.millisecondsSinceEpoch,
+  };
 
-  factory PortForwardProfile.fromRow(Map<String, Object?> row) =>
-      PortForwardProfile(
-        id: row['id']! as String,
-        hostId: row['host_id']! as String,
-        name: row['name']! as String,
-        type: ForwardType.fromStorage(row['type'] as String?),
-        listenPort: row['listen_port']! as int,
-        listenAddress: (row['listen_address'] as String?) ?? '127.0.0.1',
-        targetHost: row['target_host'] as String?,
-        targetPort: row['target_port'] as int?,
-        autoStart: (row['auto_start'] as int? ?? 0) == 1,
-        createdAt:
-            DateTime.fromMillisecondsSinceEpoch(row['created_at']! as int),
-        updatedAt:
-            DateTime.fromMillisecondsSinceEpoch(row['updated_at']! as int),
-      );
+  factory PortForwardProfile.fromRow(
+    Map<String, Object?> row,
+  ) => PortForwardProfile(
+    id: row['id']! as String,
+    hostId: row['host_id']! as String,
+    name: row['name']! as String,
+    type: ForwardType.fromStorage(row['type'] as String?),
+    listenPort: row['listen_port']! as int,
+    listenAddress: (row['listen_address'] as String?) ?? '127.0.0.1',
+    targetHost: row['target_host'] as String?,
+    targetPort: row['target_port'] as int?,
+    autoStart: (row['auto_start'] as int? ?? 0) == 1,
+    createdAt: DateTime.fromMillisecondsSinceEpoch(row['created_at']! as int),
+    updatedAt: DateTime.fromMillisecondsSinceEpoch(row['updated_at']! as int),
+  );
 
   Map<String, Object?> toExportJson() => {
-        'id': id,
-        'host_id': hostId,
-        'name': name,
-        'type': type.storageValue,
-        'listen_port': listenPort,
-        'listen_address': listenAddress,
-        'target_host': targetHost,
-        'target_port': targetPort,
-        'auto_start': autoStart,
-      };
+    'id': id,
+    'host_id': hostId,
+    'name': name,
+    'type': type.storageValue,
+    'listen_port': listenPort,
+    'listen_address': listenAddress,
+    'target_host': targetHost,
+    'target_port': targetPort,
+    'auto_start': autoStart,
+  };
 
   @override
   bool operator ==(Object other) =>

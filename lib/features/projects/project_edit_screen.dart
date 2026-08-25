@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:uuid/uuid.dart';
 
-import '../../app/providers.dart';
-import '../../app/router/app_router.dart';
+import '../../core/providers.dart';
+import '../../shared/navigation/routes.dart';
 import '../../l10n/app_localizations.dart';
 import '../../shared/models/models.dart';
 import '../../shared/widgets/common.dart';
@@ -48,8 +48,9 @@ class _ProjectEditScreenState extends ConsumerState<ProjectEditScreen> {
   }
 
   Future<void> _load() async {
-    final project =
-        await ref.read(projectsRepositoryProvider).byId(widget.projectId!);
+    final project = await ref
+        .read(projectsRepositoryProvider)
+        .byId(widget.projectId!);
     if (!mounted) return;
     if (project == null) {
       setState(() => _loaded = true);
@@ -123,7 +124,7 @@ class _ProjectEditScreenState extends ConsumerState<ProjectEditScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
-    final hosts = ref.watch(hostsProvider).valueOrNull ?? const [];
+    final hosts = ref.watch(hostsProvider).value ?? const [];
 
     if (!_loaded) return const Scaffold(body: LoadingView());
 
@@ -133,9 +134,7 @@ class _ProjectEditScreenState extends ConsumerState<ProjectEditScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(_isNew ? l10n.projectNew : l10n.projectEdit),
-        actions: [
-          TextButton(onPressed: _save, child: Text(l10n.actionSave)),
-        ],
+        actions: [TextButton(onPressed: _save, child: Text(l10n.actionSave))],
       ),
       body: Form(
         key: _formKey,

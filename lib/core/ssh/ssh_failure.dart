@@ -79,20 +79,20 @@ class SshFailure implements Exception {
 
   /// True when retrying the same connection could plausibly succeed.
   bool get isRetryable => const {
-        SshFailureKind.timeout,
-        SshFailureKind.networkUnreachable,
-        SshFailureKind.connectionLost,
-        SshFailureKind.connectionRefused,
-      }.contains(kind);
+    SshFailureKind.timeout,
+    SshFailureKind.networkUnreachable,
+    SshFailureKind.connectionLost,
+    SshFailureKind.connectionRefused,
+  }.contains(kind);
 
   /// True when the user must change configuration before retrying.
   bool get needsUserFix => const {
-        SshFailureKind.authenticationFailed,
-        SshFailureKind.credentialUnavailable,
-        SshFailureKind.passphraseRequired,
-        SshFailureKind.hostKeyChanged,
-        SshFailureKind.hostNotFound,
-      }.contains(kind);
+    SshFailureKind.authenticationFailed,
+    SshFailureKind.credentialUnavailable,
+    SshFailureKind.passphraseRequired,
+    SshFailureKind.hostKeyChanged,
+    SshFailureKind.hostNotFound,
+  }.contains(kind);
 
   @override
   String toString() => 'SshFailure(${kind.name}): $message';
@@ -110,14 +110,16 @@ class SshFailure implements Exception {
 
     if (error is SocketException) {
       final osError = error.osError;
-      final detail = '${error.message}${osError == null ? '' : ' (${osError.message})'}';
+      final detail =
+          '${error.message}${osError == null ? '' : ' (${osError.message})'}';
 
       if (error.osError?.errorCode == 111 ||
           error.message.toLowerCase().contains('refused')) {
         return SshFailure(
           kind: SshFailureKind.connectionRefused,
           message: 'SSH connection refused on port $port.',
-          action: 'Check that the SSH server is running and the port is correct.',
+          action:
+              'Check that the SSH server is running and the port is correct.',
           technicalDetail: detail,
         );
       }
@@ -190,13 +192,15 @@ class SshFailure implements Exception {
       // wrong cause, so the message text is checked to tell them apart.
       final isTimeout = error.message.toLowerCase().contains('timed out');
       return SshFailure(
-        kind: isTimeout ? SshFailureKind.timeout : SshFailureKind.handshakeFailed,
+        kind: isTimeout
+            ? SshFailureKind.timeout
+            : SshFailureKind.handshakeFailed,
         message: isTimeout
             ? 'Connecting to $hostname timed out during the handshake.'
             : 'Could not agree on an SSH connection method.',
         action: isTimeout
             ? 'The computer may be slow to respond, or the connection may '
-                'have dropped.'
+                  'have dropped.'
             : 'The server may use algorithms this app does not support.',
         technicalDetail: error.toString(),
       );
@@ -250,12 +254,12 @@ class SshFailure implements Exception {
     required String hostname,
     required String saved,
     required String received,
-  }) =>
-      SshFailure(
-        kind: SshFailureKind.hostKeyChanged,
-        message: 'The SSH identity of $hostname has changed.',
-        action: 'Connection has been blocked. Verify the computer before '
-            'trusting the new key.',
-        technicalDetail: 'Saved:\n$saved\n\nReceived:\n$received',
-      );
+  }) => SshFailure(
+    kind: SshFailureKind.hostKeyChanged,
+    message: 'The SSH identity of $hostname has changed.',
+    action:
+        'Connection has been blocked. Verify the computer before '
+        'trusting the new key.',
+    technicalDetail: 'Saved:\n$saved\n\nReceived:\n$received',
+  );
 }

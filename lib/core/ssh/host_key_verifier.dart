@@ -1,5 +1,3 @@
-
-
 import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 
@@ -26,8 +24,7 @@ class HostKeyPromptRequest {
   final String keyType;
   final String fingerprintSha256;
 
-  String get fingerprintForDisplay =>
-      Fingerprint.forDisplay(fingerprintSha256);
+  String get fingerprintForDisplay => Fingerprint.forDisplay(fingerprintSha256);
 }
 
 /// Asks the user whether to trust an unknown host key.
@@ -45,11 +42,8 @@ typedef HostKeyPrompt = Future<bool> Function(HostKeyPromptRequest request);
 ///   no setting anywhere that turns this off (SPEC 44.8); clearing the trust
 ///   entry is an explicit, per-host action in Settings.
 class HostKeyVerifier {
-  HostKeyVerifier({
-    required this.trustedKeys,
-    required this.prompt,
-    Uuid? uuid,
-  }) : _uuid = uuid ?? const Uuid();
+  HostKeyVerifier({required this.trustedKeys, required this.prompt, Uuid? uuid})
+    : _uuid = uuid ?? const Uuid();
 
   final TrustedKeysRepository trustedKeys;
   final HostKeyPrompt prompt;
@@ -78,7 +72,9 @@ class HostKeyVerifier {
       );
 
       if (stored != null) {
-        if (Fingerprint.matches(stored.fingerprintSha256, received)) return true;
+        if (Fingerprint.matches(stored.fingerprintSha256, received)) {
+          return true;
+        }
 
         lastFailure = SshFailure.hostKeyChanged(
           hostname: host.hostname,
@@ -116,7 +112,11 @@ class HostKeyVerifier {
         await trustedKeys.trust(
           TrustedHostKey(
             id: _uuid.v4(),
-            hostId: host.id,
+            // Endpoint identity is the authority. Keeping this association
+            // nullable lets Test Connection remember consent before a new host
+            // form has been saved and therefore before its foreign-key row
+            // exists.
+            hostId: null,
             hostname: host.hostname,
             port: host.port,
             keyType: keyType,

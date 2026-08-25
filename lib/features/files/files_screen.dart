@@ -8,7 +8,7 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
-import '../../app/providers.dart';
+import '../../core/providers.dart';
 import '../../core/ssh/sftp_service.dart';
 import '../../core/ssh/ssh_connection.dart';
 import '../../core/ssh/ssh_failure.dart';
@@ -60,8 +60,9 @@ class _FilesScreenState extends ConsumerState<FilesScreen> {
       final host = await ref.read(hostsRepositoryProvider).byId(widget.hostId);
       if (host == null) throw StateError('Host not found');
 
-      final connection =
-          await ref.read(connectionManagerProvider).connect(host);
+      final connection = await ref
+          .read(connectionManagerProvider)
+          .connect(host);
       final sftp = ref.read(sftpServiceProvider);
 
       // A project path may be `~/…`, which SFTP does not expand; resolving
@@ -96,8 +97,9 @@ class _FilesScreenState extends ConsumerState<FilesScreen> {
     });
 
     try {
-      final entries =
-          await ref.read(sftpServiceProvider).list(connection, path);
+      final entries = await ref
+          .read(sftpServiceProvider)
+          .list(connection, path);
       if (!mounted) return;
       setState(() {
         _path = path;
@@ -115,18 +117,19 @@ class _FilesScreenState extends ConsumerState<FilesScreen> {
 
   List<RemoteFile> get _visibleEntries {
     final entries = _entries ?? const <RemoteFile>[];
-    final filtered =
-        _showHidden ? entries : entries.where((e) => !e.isHidden).toList();
+    final filtered = _showHidden
+        ? entries
+        : entries.where((e) => !e.isHidden).toList();
 
     final sorted = [...filtered];
     sorted.sort((a, b) {
       if (a.isDirectory != b.isDirectory) return a.isDirectory ? -1 : 1;
       return switch (_sortBy) {
-        _SortBy.name =>
-          a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+        _SortBy.name => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
         _SortBy.size => (b.size ?? 0).compareTo(a.size ?? 0),
-        _SortBy.modified => (b.modified ?? DateTime(1970))
-            .compareTo(a.modified ?? DateTime(1970)),
+        _SortBy.modified => (b.modified ?? DateTime(1970)).compareTo(
+          a.modified ?? DateTime(1970),
+        ),
       };
     });
     return sorted;
@@ -148,9 +151,9 @@ class _FilesScreenState extends ConsumerState<FilesScreen> {
               Text(
                 shortenPath(path, maxLength: 46),
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      fontFamily: 'monospace',
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
+                  fontFamily: 'monospace',
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
           ],
         ),
@@ -187,7 +190,10 @@ class _FilesScreenState extends ConsumerState<FilesScreen> {
               const PopupMenuDivider(),
               PopupMenuItem(value: 'mkdir', child: Text(l10n.actionNewFolder)),
               PopupMenuItem(value: 'upload', child: Text(l10n.actionUpload)),
-              PopupMenuItem(value: 'copy_path', child: Text(l10n.actionCopyPath)),
+              PopupMenuItem(
+                value: 'copy_path',
+                child: Text(l10n.actionCopyPath),
+              ),
             ],
           ),
         ],
@@ -238,8 +244,7 @@ class _FilesScreenState extends ConsumerState<FilesScreen> {
                 )
               : ListView.builder(
                   itemCount: entries.length,
-                  itemBuilder: (context, index) =>
-                      _FileTile(
+                  itemBuilder: (context, index) => _FileTile(
                     file: entries[index],
                     onTap: () => _onEntryTap(entries[index]),
                     onLongPress: () => _showEntryMenu(entries[index]),
@@ -265,10 +270,7 @@ class _FilesScreenState extends ConsumerState<FilesScreen> {
     final size = file.size ?? 0;
     if (size > SftpService.maxViewableBytes) {
       if (!mounted) return;
-      showMessage(
-        context,
-        AppLocalizations.of(context).filesTooLargeToView,
-      );
+      showMessage(context, AppLocalizations.of(context).filesTooLargeToView);
       await _download(file);
       return;
     }
@@ -276,10 +278,8 @@ class _FilesScreenState extends ConsumerState<FilesScreen> {
     if (!mounted) return;
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (context) => FileViewerScreen(
-          connection: connection,
-          file: file,
-        ),
+        builder: (context) =>
+            FileViewerScreen(connection: connection, file: file),
       ),
     );
   }
@@ -380,10 +380,9 @@ class _FilesScreenState extends ConsumerState<FilesScreen> {
     if (name == null || !mounted) return;
 
     try {
-      await ref.read(sftpServiceProvider).createDirectory(
-            connection,
-            SftpService.joinPath(path, name),
-          );
+      await ref
+          .read(sftpServiceProvider)
+          .createDirectory(connection, SftpService.joinPath(path, name));
       await _navigate(path);
     } on FileOperationException catch (error) {
       if (mounted) showMessage(context, error.message, isError: true);
@@ -405,11 +404,9 @@ class _FilesScreenState extends ConsumerState<FilesScreen> {
     if (name == null || name == file.name || !mounted) return;
 
     try {
-      await ref.read(sftpServiceProvider).rename(
-            connection,
-            file.path,
-            SftpService.joinPath(path, name),
-          );
+      await ref
+          .read(sftpServiceProvider)
+          .rename(connection, file.path, SftpService.joinPath(path, name));
       await _navigate(path);
     } on FileOperationException catch (error) {
       if (mounted) showMessage(context, error.message, isError: true);
@@ -482,11 +479,9 @@ class _FilesScreenState extends ConsumerState<FilesScreen> {
     final localPath = p.join(directory.path, file.name);
 
     if (!mounted) return;
-    final handle = ref.read(sftpServiceProvider).download(
-          connection,
-          remotePath: file.path,
-          localPath: localPath,
-        );
+    final handle = ref
+        .read(sftpServiceProvider)
+        .download(connection, remotePath: file.path, localPath: localPath);
 
     final completed = await showTransferSheet(
       context,
@@ -511,22 +506,46 @@ class _FilesScreenState extends ConsumerState<FilesScreen> {
     // The picker may hand back a SAF URI with no filesystem path; copying to a
     // temp file gives the streaming uploader something it can read.
     var localPath = picked.path;
+    String? stagedPath;
     if (localPath == null) {
       final directory = await getTemporaryDirectory();
       localPath = p.join(directory.path, picked.name);
-      await File(localPath).writeAsBytes(await picked.readAsBytes());
+      stagedPath = localPath;
+      final sink = File(localPath).openWrite();
+      try {
+        await for (final chunk in picked.readAsByteStream()) {
+          sink.add(chunk);
+        }
+      } finally {
+        await sink.close();
+      }
     }
 
     if (!mounted) return;
-    final handle = ref.read(sftpServiceProvider).upload(
+    final handle = ref
+        .read(sftpServiceProvider)
+        .upload(
           connection,
           localPath: localPath,
           remotePath: SftpService.joinPath(path, picked.name),
         );
 
-    final completed =
-        await showTransferSheet(context, title: picked.name, handle: handle);
-    if (completed && mounted) await _navigate(path);
+    try {
+      final completed = await showTransferSheet(
+        context,
+        title: picked.name,
+        handle: handle,
+      );
+      if (completed && mounted) await _navigate(path);
+    } finally {
+      if (stagedPath != null) {
+        try {
+          await File(stagedPath).delete();
+        } on FileSystemException {
+          // The temporary file may already have been cleaned up by the OS.
+        }
+      }
+    }
   }
 }
 
@@ -553,8 +572,8 @@ class _FileTile extends StatelessWidget {
         file.isDirectory
             ? Icons.folder
             : file.isSymlink
-                ? Icons.link
-                : _iconForExtension(file.extension),
+            ? Icons.link
+            : _iconForExtension(file.extension),
         color: file.isDirectory
             ? theme.colorScheme.primary
             : theme.colorScheme.onSurfaceVariant,
@@ -578,29 +597,35 @@ class _FileTile extends StatelessWidget {
   }
 
   static IconData _iconForExtension(String extension) => switch (extension) {
-        'json' || 'yaml' || 'yml' || 'toml' || 'xml' =>
-          Icons.data_object_outlined,
-        'md' || 'txt' || 'rst' => Icons.article_outlined,
-        'log' => Icons.receipt_long_outlined,
-        'png' || 'jpg' || 'jpeg' || 'gif' || 'webp' || 'svg' =>
-          Icons.image_outlined,
-        'zip' || 'tar' || 'gz' || 'bz2' || 'xz' || '7z' =>
-          Icons.folder_zip_outlined,
-        'dart' ||
-        'py' ||
-        'js' ||
-        'ts' ||
-        'go' ||
-        'rs' ||
-        'java' ||
-        'kt' ||
-        'c' ||
-        'cpp' ||
-        'h' ||
-        'sh' =>
-          Icons.code,
-        _ => Icons.insert_drive_file_outlined,
-      };
+    'json' || 'yaml' || 'yml' || 'toml' || 'xml' => Icons.data_object_outlined,
+    'md' || 'txt' || 'rst' => Icons.article_outlined,
+    'log' => Icons.receipt_long_outlined,
+    'png' ||
+    'jpg' ||
+    'jpeg' ||
+    'gif' ||
+    'webp' ||
+    'svg' => Icons.image_outlined,
+    'zip' ||
+    'tar' ||
+    'gz' ||
+    'bz2' ||
+    'xz' ||
+    '7z' => Icons.folder_zip_outlined,
+    'dart' ||
+    'py' ||
+    'js' ||
+    'ts' ||
+    'go' ||
+    'rs' ||
+    'java' ||
+    'kt' ||
+    'c' ||
+    'cpp' ||
+    'h' ||
+    'sh' => Icons.code,
+    _ => Icons.insert_drive_file_outlined,
+  };
 }
 
 Future<String?> _askText(

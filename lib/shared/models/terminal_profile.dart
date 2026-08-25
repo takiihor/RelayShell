@@ -30,37 +30,38 @@ class TerminalProfile {
   final DateTime createdAt;
 
   Map<String, Object?> toRow() => {
-        'id': id,
-        'name': name,
-        'theme_id': themeId,
-        'font_family': fontFamily,
-        'font_size': fontSize,
-        'cursor_style': cursorStyle.storageValue,
-        'scrollback_lines': scrollbackLines,
-        'created_at': createdAt.millisecondsSinceEpoch,
-      };
+    'id': id,
+    'name': name,
+    'theme_id': themeId,
+    'font_family': fontFamily,
+    'font_size': fontSize,
+    'cursor_style': cursorStyle.storageValue,
+    'scrollback_lines': scrollbackLines,
+    'created_at': createdAt.millisecondsSinceEpoch,
+  };
 
   factory TerminalProfile.fromRow(Map<String, Object?> row) => TerminalProfile(
-        id: row['id']! as String,
-        name: row['name']! as String,
-        themeId: row['theme_id']! as String,
-        fontFamily: row['font_family']! as String,
-        fontSize: (row['font_size']! as num).toDouble(),
-        cursorStyle: TerminalCursorStyle.fromStorage(row['cursor_style'] as String?),
-        scrollbackLines: row['scrollback_lines']! as int,
-        createdAt:
-            DateTime.fromMillisecondsSinceEpoch(row['created_at']! as int),
-      );
+    id: row['id']! as String,
+    name: row['name']! as String,
+    themeId: row['theme_id']! as String,
+    fontFamily: row['font_family']! as String,
+    fontSize: (row['font_size']! as num).toDouble(),
+    cursorStyle: TerminalCursorStyle.fromStorage(
+      row['cursor_style'] as String?,
+    ),
+    scrollbackLines: row['scrollback_lines']! as int,
+    createdAt: DateTime.fromMillisecondsSinceEpoch(row['created_at']! as int),
+  );
 
   Map<String, Object?> toExportJson() => {
-        'id': id,
-        'name': name,
-        'theme_id': themeId,
-        'font_family': fontFamily,
-        'font_size': fontSize,
-        'cursor_style': cursorStyle.storageValue,
-        'scrollback_lines': scrollbackLines,
-      };
+    'id': id,
+    'name': name,
+    'theme_id': themeId,
+    'font_family': fontFamily,
+    'font_size': fontSize,
+    'cursor_style': cursorStyle.storageValue,
+    'scrollback_lines': scrollbackLines,
+  };
 
   @override
   bool operator ==(Object other) => other is TerminalProfile && other.id == id;

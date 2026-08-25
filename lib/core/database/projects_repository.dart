@@ -46,8 +46,12 @@ class ProjectsRepository extends Repository {
       watch(() => recent(limit: limit));
 
   Future<Project?> byId(String id) async {
-    final rows =
-        await db.query(table, where: 'id = ?', whereArgs: [id], limit: 1);
+    final rows = await db.query(
+      table,
+      where: 'id = ?',
+      whereArgs: [id],
+      limit: 1,
+    );
     if (rows.isEmpty) return null;
     return Project.fromRow(rows.first);
   }

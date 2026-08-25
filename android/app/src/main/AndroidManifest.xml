@@ -15,9 +15,11 @@
     <!-- Biometric / device-credential prompts for app lock and protected
          credentials (SPEC 18.3, 19). -->
     <uses-permission android:name="android.permission.USE_BIOMETRIC" />
+    <uses-permission android:name="android.permission.USE_FINGERPRINT" />
 
     <application
-        android:label="Remote Dev Console"
+        android:allowBackup="false"
+        android:label="RelayShell"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

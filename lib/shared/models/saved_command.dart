@@ -57,74 +57,71 @@ class SavedCommand {
     SessionMode? sessionMode,
     bool? favorite,
     DateTime? updatedAt,
-  }) =>
-      SavedCommand(
-        id: id,
-        name: name ?? this.name,
-        command: command ?? this.command,
-        scope: scope ?? this.scope,
-        hostId: hostId == _unset ? this.hostId : hostId as String?,
-        projectId: projectId == _unset ? this.projectId : projectId as String?,
-        workingDirectory: workingDirectory == _unset
-            ? this.workingDirectory
-            : workingDirectory as String?,
-        executionMode: executionMode ?? this.executionMode,
-        confirmationMode: confirmationMode ?? this.confirmationMode,
-        sessionMode: sessionMode ?? this.sessionMode,
-        favorite: favorite ?? this.favorite,
-        createdAt: createdAt,
-        updatedAt: updatedAt ?? DateTime.now(),
-      );
+  }) => SavedCommand(
+    id: id,
+    name: name ?? this.name,
+    command: command ?? this.command,
+    scope: scope ?? this.scope,
+    hostId: hostId == _unset ? this.hostId : hostId as String?,
+    projectId: projectId == _unset ? this.projectId : projectId as String?,
+    workingDirectory: workingDirectory == _unset
+        ? this.workingDirectory
+        : workingDirectory as String?,
+    executionMode: executionMode ?? this.executionMode,
+    confirmationMode: confirmationMode ?? this.confirmationMode,
+    sessionMode: sessionMode ?? this.sessionMode,
+    favorite: favorite ?? this.favorite,
+    createdAt: createdAt,
+    updatedAt: updatedAt ?? DateTime.now(),
+  );
 
   Map<String, Object?> toRow() => {
-        'id': id,
-        'name': name,
-        'command': command,
-        'scope': scope.storageValue,
-        'host_id': hostId,
-        'project_id': projectId,
-        'working_directory': workingDirectory,
-        'execution_mode': executionMode.storageValue,
-        'confirmation_mode': confirmationMode.storageValue,
-        'session_mode': sessionMode.storageValue,
-        'favorite': favorite ? 1 : 0,
-        'created_at': createdAt.millisecondsSinceEpoch,
-        'updated_at': updatedAt.millisecondsSinceEpoch,
-      };
+    'id': id,
+    'name': name,
+    'command': command,
+    'scope': scope.storageValue,
+    'host_id': hostId,
+    'project_id': projectId,
+    'working_directory': workingDirectory,
+    'execution_mode': executionMode.storageValue,
+    'confirmation_mode': confirmationMode.storageValue,
+    'session_mode': sessionMode.storageValue,
+    'favorite': favorite ? 1 : 0,
+    'created_at': createdAt.millisecondsSinceEpoch,
+    'updated_at': updatedAt.millisecondsSinceEpoch,
+  };
 
   factory SavedCommand.fromRow(Map<String, Object?> row) => SavedCommand(
-        id: row['id']! as String,
-        name: row['name']! as String,
-        command: row['command']! as String,
-        scope: CommandScope.fromStorage(row['scope'] as String?),
-        hostId: row['host_id'] as String?,
-        projectId: row['project_id'] as String?,
-        workingDirectory: row['working_directory'] as String?,
-        executionMode:
-            ExecutionMode.fromStorage(row['execution_mode'] as String?),
-        confirmationMode:
-            ConfirmationMode.fromStorage(row['confirmation_mode'] as String?),
-        sessionMode: SessionMode.fromStorage(row['session_mode'] as String?),
-        favorite: (row['favorite'] as int? ?? 0) == 1,
-        createdAt:
-            DateTime.fromMillisecondsSinceEpoch(row['created_at']! as int),
-        updatedAt:
-            DateTime.fromMillisecondsSinceEpoch(row['updated_at']! as int),
-      );
+    id: row['id']! as String,
+    name: row['name']! as String,
+    command: row['command']! as String,
+    scope: CommandScope.fromStorage(row['scope'] as String?),
+    hostId: row['host_id'] as String?,
+    projectId: row['project_id'] as String?,
+    workingDirectory: row['working_directory'] as String?,
+    executionMode: ExecutionMode.fromStorage(row['execution_mode'] as String?),
+    confirmationMode: ConfirmationMode.fromStorage(
+      row['confirmation_mode'] as String?,
+    ),
+    sessionMode: SessionMode.fromStorage(row['session_mode'] as String?),
+    favorite: (row['favorite'] as int? ?? 0) == 1,
+    createdAt: DateTime.fromMillisecondsSinceEpoch(row['created_at']! as int),
+    updatedAt: DateTime.fromMillisecondsSinceEpoch(row['updated_at']! as int),
+  );
 
   Map<String, Object?> toExportJson() => {
-        'id': id,
-        'name': name,
-        'command': command,
-        'scope': scope.storageValue,
-        'host_id': hostId,
-        'project_id': projectId,
-        'working_directory': workingDirectory,
-        'execution_mode': executionMode.storageValue,
-        'confirmation_mode': confirmationMode.storageValue,
-        'session_mode': sessionMode.storageValue,
-        'favorite': favorite,
-      };
+    'id': id,
+    'name': name,
+    'command': command,
+    'scope': scope.storageValue,
+    'host_id': hostId,
+    'project_id': projectId,
+    'working_directory': workingDirectory,
+    'execution_mode': executionMode.storageValue,
+    'confirmation_mode': confirmationMode.storageValue,
+    'session_mode': sessionMode.storageValue,
+    'favorite': favorite,
+  };
 
   factory SavedCommand.fromExportJson(
     Map<String, Object?> json, {
@@ -141,9 +138,12 @@ class SavedCommand {
       hostId: hostId,
       projectId: projectId,
       workingDirectory: json['working_directory'] as String?,
-      executionMode: ExecutionMode.fromStorage(json['execution_mode'] as String?),
-      confirmationMode:
-          ConfirmationMode.fromStorage(json['confirmation_mode'] as String?),
+      executionMode: ExecutionMode.fromStorage(
+        json['execution_mode'] as String?,
+      ),
+      confirmationMode: ConfirmationMode.fromStorage(
+        json['confirmation_mode'] as String?,
+      ),
       sessionMode: SessionMode.fromStorage(json['session_mode'] as String?),
       favorite: json['favorite'] == true,
       createdAt: now,

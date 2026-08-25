@@ -4,8 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:uuid/uuid.dart';
 
-import '../../app/providers.dart';
-import '../../app/router/app_router.dart';
+import '../../core/providers.dart';
+import '../../shared/navigation/routes.dart';
 import '../../core/platform/wake_on_lan.dart';
 import '../../core/ssh/ssh_failure.dart';
 import '../../l10n/app_localizations.dart';
@@ -170,8 +170,9 @@ class _HostEditScreenState extends ConsumerState<HostEditScreen> {
     final l10n = AppLocalizations.of(context);
 
     try {
-      final connection =
-          await ref.read(connectionManagerProvider).connect(host);
+      final connection = await ref
+          .read(connectionManagerProvider)
+          .connect(host);
       await ref.read(connectionManagerProvider).disconnect(host.id);
       if (!mounted) return;
       setState(() {
@@ -202,17 +203,25 @@ class _HostEditScreenState extends ConsumerState<HostEditScreen> {
     final previous = _existing;
     if (previous != null &&
         (previous.hostname != host.hostname || previous.port != host.port)) {
-      await ref.read(trustedKeysRepositoryProvider).revokeEndpoint(
-            hostname: previous.hostname,
-            port: previous.port,
-          );
+      await ref
+          .read(trustedKeysRepositoryProvider)
+          .revokeEndpoint(hostname: previous.hostname, port: previous.port);
       await ref.read(connectionManagerProvider).disconnect(host.id);
     }
 
     await ref.read(hostsRepositoryProvider).upsert(host);
+    await ref
+        .read(trustedKeysRepositoryProvider)
+        .attachUnownedEndpoint(
+          hostId: host.id,
+          hostname: host.hostname,
+          port: host.port,
+        );
 
     if (_wolEnabled && WakeOnLan.isValidMac(_wolMac.text)) {
-      await ref.read(wolRepositoryProvider).upsert(
+      await ref
+          .read(wolRepositoryProvider)
+          .upsert(
             WolProfile(
               hostId: host.id,
               macAddress: _wolMac.text.trim(),
@@ -235,7 +244,7 @@ class _HostEditScreenState extends ConsumerState<HostEditScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
-    final credentials = ref.watch(credentialsProvider).valueOrNull ?? const [];
+    final credentials = ref.watch(credentialsProvider).value ?? const [];
 
     if (!_loaded) {
       return const Scaffold(body: LoadingView());
@@ -505,12 +514,8 @@ class _HostEditScreenState extends ConsumerState<HostEditScreen> {
                     child: TextFormField(
                       controller: _wolPort,
                       keyboardType: TextInputType.number,
-                      inputFormatters: [
-                        FilteringTextInputFormatter.digitsOnly,
-                      ],
-                      decoration: InputDecoration(
-                        labelText: l10n.wolFieldPort,
-                      ),
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      decoration: InputDecoration(labelText: l10n.wolFieldPort),
                     ),
                   ),
                 ],
@@ -579,17 +584,15 @@ class _CredentialPicker extends ConsumerWidget {
 
     final validSelection =
         credentials.any((credential) => credential.id == selectedId)
-            ? selectedId
-            : null;
+        ? selectedId
+        : null;
 
     return DropdownButtonFormField<String?>(
       initialValue: validSelection,
       decoration: InputDecoration(labelText: l10n.authSelectCredential),
       items: [
         if (allowNone)
-          DropdownMenuItem<String?>(
-            child: Text(l10n.computerNoCredential),
-          ),
+          DropdownMenuItem<String?>(child: Text(l10n.computerNoCredential)),
         for (final credential in credentials)
           DropdownMenuItem<String?>(
             value: credential.id,

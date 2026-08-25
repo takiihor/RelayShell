@@ -22,33 +22,33 @@ class WolProfile {
     String? macAddress,
     String? broadcastAddress,
     int? port,
-  }) =>
-      WolProfile(
-        hostId: hostId,
-        macAddress: macAddress ?? this.macAddress,
-        broadcastAddress: broadcastAddress ?? this.broadcastAddress,
-        port: port ?? this.port,
-      );
+  }) => WolProfile(
+    hostId: hostId,
+    macAddress: macAddress ?? this.macAddress,
+    broadcastAddress: broadcastAddress ?? this.broadcastAddress,
+    port: port ?? this.port,
+  );
 
   Map<String, Object?> toRow() => {
-        'host_id': hostId,
-        'mac_address': macAddress,
-        'broadcast_address': broadcastAddress,
-        'port': port,
-      };
+    'host_id': hostId,
+    'mac_address': macAddress,
+    'broadcast_address': broadcastAddress,
+    'port': port,
+  };
 
   factory WolProfile.fromRow(Map<String, Object?> row) => WolProfile(
-        hostId: row['host_id']! as String,
-        macAddress: row['mac_address']! as String,
-        broadcastAddress:
-            (row['broadcast_address'] as String?) ?? '255.255.255.255',
-        port: row['port'] as int? ?? 9,
-      );
+    hostId: row['host_id']! as String,
+    macAddress: row['mac_address']! as String,
+    broadcastAddress:
+        (row['broadcast_address'] as String?) ?? '255.255.255.255',
+    port: row['port'] as int? ?? 9,
+  );
 
   Map<String, Object?> toExportJson() => toRow();
 
   @override
-  bool operator ==(Object other) => other is WolProfile && other.hostId == hostId;
+  bool operator ==(Object other) =>
+      other is WolProfile && other.hostId == hostId;
 
   @override
   int get hashCode => hostId.hashCode;

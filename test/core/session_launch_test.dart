@@ -36,12 +36,20 @@ void main() {
   });
 
   group('directCommand', () {
-    test('changes directory then runs the command', () {
+    test('runs the command only after changing directory', () {
       final plan = posix.directCommand(
         'npm run dev',
         workingDirectory: '/srv/app',
       );
-      expect(plan.initialInput, 'cd /srv/app\nnpm run dev\n');
+      expect(plan.initialInput, 'cd /srv/app && npm run dev\n');
+    });
+
+    test('uses conditional PowerShell sequencing after changing directory', () {
+      final plan = powerShell.directCommand(
+        'npm run dev',
+        workingDirectory: r'C:\app',
+      );
+      expect(plan.initialInput, contains('if (\$?) { npm run dev }'));
     });
 
     test('runs the command alone with no directory', () {
@@ -146,10 +154,7 @@ void main() {
 
     test('avoids names already in use', () {
       expect(
-        posix.sessionNameFor(
-          subject: 'api',
-          existingNames: {'rdc-api'},
-        ),
+        posix.sessionNameFor(subject: 'api', existingNames: {'rdc-api'}),
         'rdc-api-2',
       );
     });

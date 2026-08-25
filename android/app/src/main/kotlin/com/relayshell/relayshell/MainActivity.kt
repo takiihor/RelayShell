@@ -1,7 +1,7 @@
 package com.relayshell.relayshell
 
 import android.view.WindowManager
-import io.flutter.embedding.android.FlutterActivity
+import io.flutter.embedding.android.FlutterFragmentActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 
@@ -14,7 +14,7 @@ import io.flutter.plugin.common.MethodChannel
  * permanently, because users who have not enabled the app lock should still be
  * able to screenshot their own terminal.
  */
-class MainActivity : FlutterActivity() {
+class MainActivity : FlutterFragmentActivity() {
     private companion object {
         const val CHANNEL = "relayshell/window"
     }

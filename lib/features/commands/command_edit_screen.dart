@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:uuid/uuid.dart';
 
-import '../../app/providers.dart';
+import '../../core/providers.dart';
 import '../../core/shell/command_variables.dart';
 import '../../core/shell/danger_analysis.dart';
 import '../../l10n/app_localizations.dart';
@@ -66,8 +66,9 @@ class _CommandEditScreenState extends ConsumerState<CommandEditScreen> {
   }
 
   Future<void> _load() async {
-    final command =
-        await ref.read(commandsRepositoryProvider).byId(widget.commandId!);
+    final command = await ref
+        .read(commandsRepositoryProvider)
+        .byId(widget.commandId!);
     if (!mounted) return;
     if (command == null) {
       setState(() => _loaded = true);
@@ -146,8 +147,8 @@ class _CommandEditScreenState extends ConsumerState<CommandEditScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
-    final hosts = ref.watch(hostsProvider).valueOrNull ?? const [];
-    final projects = ref.watch(projectsProvider).valueOrNull ?? const [];
+    final hosts = ref.watch(hostsProvider).value ?? const [];
+    final projects = ref.watch(projectsProvider).value ?? const [];
 
     if (!_loaded) return const Scaffold(body: LoadingView());
 
@@ -157,9 +158,7 @@ class _CommandEditScreenState extends ConsumerState<CommandEditScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(_isNew ? l10n.commandNew : l10n.commandEdit),
-        actions: [
-          TextButton(onPressed: _save, child: Text(l10n.actionSave)),
-        ],
+        actions: [TextButton(onPressed: _save, child: Text(l10n.actionSave))],
       ),
       body: Form(
         key: _formKey,
@@ -283,7 +282,9 @@ class _CommandEditScreenState extends ConsumerState<CommandEditScreen> {
             if (_scope == CommandScope.host) ...[
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
-                initialValue: hosts.any((h) => h.id == _hostId) ? _hostId : null,
+                initialValue: hosts.any((h) => h.id == _hostId)
+                    ? _hostId
+                    : null,
                 decoration: InputDecoration(labelText: l10n.commandFieldHost),
                 items: [
                   for (final host in hosts)
@@ -296,10 +297,12 @@ class _CommandEditScreenState extends ConsumerState<CommandEditScreen> {
             if (_scope == CommandScope.project) ...[
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
-                initialValue:
-                    projects.any((p) => p.id == _projectId) ? _projectId : null,
-                decoration:
-                    InputDecoration(labelText: l10n.commandFieldProject),
+                initialValue: projects.any((p) => p.id == _projectId)
+                    ? _projectId
+                    : null,
+                decoration: InputDecoration(
+                  labelText: l10n.commandFieldProject,
+                ),
                 items: [
                   for (final project in projects)
                     DropdownMenuItem(
@@ -371,17 +374,17 @@ class _CommandEditScreenState extends ConsumerState<CommandEditScreen> {
                     child: Text(l10n.sessionModePersistent),
                   ),
                 ],
-                onChanged: (value) => setState(
-                  () => _sessionMode = value ?? SessionMode.direct,
-                ),
+                onChanged: (value) =>
+                    setState(() => _sessionMode = value ?? SessionMode.direct),
               ),
             ],
 
             const SizedBox(height: 16),
             DropdownButtonFormField<ConfirmationMode>(
               initialValue: _confirmationMode,
-              decoration:
-                  InputDecoration(labelText: l10n.commandFieldConfirmation),
+              decoration: InputDecoration(
+                labelText: l10n.commandFieldConfirmation,
+              ),
               items: [
                 DropdownMenuItem(
                   value: ConfirmationMode.none,

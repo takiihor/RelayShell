@@ -196,6 +196,48 @@ void main() {
 
     expect(terminals.matchingPlan?.tmuxSessionName, 'rdc-home-pc-shell');
   });
+
+  test(
+    'Resume reuses and reconnects a matching disconnected terminal',
+    () async {
+      await hosts.upsert(host);
+      final now = DateTime.now();
+      final record = SessionRecord(
+        id: 'session-1',
+        hostId: host.id,
+        tmuxSessionName: 'rdc-home-pc-shell',
+        displayName: 'Home shell',
+        mode: SessionMode.persistent,
+        createdAt: now,
+        lastUsedAt: now,
+      );
+      await sessions.upsert(record);
+
+      final existing = _ReconnectableTerminalSession(
+        id: 'disconnected',
+        host: host,
+        launchPlan: const SessionLaunchBuilder(
+          platform: RemotePlatform.posix,
+          prefix: 'rdc',
+        ).persistentSession(sessionName: 'rdc-home-pc-shell'),
+        preferences: const AppPreferences(),
+        connections: connections,
+      );
+      final terminals = _MatchingTerminalManager(
+        connections: connections,
+        sessions: sessions,
+        match: existing,
+      );
+
+      final result = await launcherFor(terminals)
+          .resumeSession(record: record, preferences: const AppPreferences());
+
+      expect(result, same(existing));
+      expect(existing.reconnected, isTrue);
+      expect(terminals.opened, isFalse);
+      expect(terminals.selectedId, existing.id);
+    },
+  );
 }
 
 class _MatchingTerminalManager extends TerminalManager {

@@ -37,7 +37,9 @@ class DangerAnalyzer {
 
   static final List<_Rule> _rules = [
     _Rule(
-      RegExp(r'\brm\s+(-[a-zA-Z]*[rR][a-zA-Z]*\s+)*-[a-zA-Z]*f|\brm\s+-[a-zA-Z]*f[a-zA-Z]*\s+-[a-zA-Z]*[rR]'),
+      RegExp(
+        r'\brm\s+(-[a-zA-Z]*[rR][a-zA-Z]*\s+)*-[a-zA-Z]*f|\brm\s+-[a-zA-Z]*f[a-zA-Z]*\s+-[a-zA-Z]*[rR]',
+      ),
       'rm -rf',
       'Recursively force-deletes files without prompting.',
     ),
@@ -87,7 +89,9 @@ class DangerAnalyzer {
       'Executes a script straight from the network without review.',
     ),
     _Rule(
-      RegExp(r'\bgit\s+(reset\s+--hard|clean\s+-[a-zA-Z]*f|push\s+.*--force(-with-lease)?\b)'),
+      RegExp(
+        r'\bgit\s+(reset\s+--hard|clean\s+-[a-zA-Z]*f|push\s+.*--force(-with-lease)?\b)',
+      ),
       'destructive git',
       'Discards local work or rewrites published history.',
     ),

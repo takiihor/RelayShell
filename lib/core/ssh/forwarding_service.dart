@@ -14,7 +14,7 @@ class ActiveForward {
     required this.hostId,
     required this.boundPort,
     required Future<void> Function() stop,
-  // ignore: prefer_initializing_formals
+    // ignore: prefer_initializing_formals
   }) : _stop = stop;
 
   final PortForwardProfile profile;
@@ -51,6 +51,8 @@ class ForwardingService {
   ForwardingService();
 
   final Map<String, ActiveForward> _active = {};
+  final Map<String, StreamSubscription<SshConnectionStatus>>
+  _connectionWatches = {};
   final StreamController<void> _changes = StreamController<void>.broadcast();
 
   Stream<void> get changes => _changes.stream;
@@ -76,6 +78,7 @@ class ForwardingService {
     };
 
     _active[profile.id] = forward;
+    _watchConnection(connection);
     _notify();
     return forward;
   }
@@ -96,7 +99,10 @@ class ForwardingService {
 
     final ServerSocket server;
     try {
-      server = await ServerSocket.bind(profile.listenAddress, profile.listenPort);
+      server = await ServerSocket.bind(
+        profile.listenAddress,
+        profile.listenPort,
+      );
     } on SocketException catch (error) {
       throw SshFailure(
         kind: SshFailureKind.featureUnavailable,
@@ -117,7 +123,9 @@ class ForwardingService {
         unawaited(
           socket.cast<List<int>>().pipe(channel.sink).catchError((_) {}),
         );
-        unawaited(channel.stream.cast<List<int>>().pipe(socket).catchError((_) {}));
+        unawaited(
+          channel.stream.cast<List<int>>().pipe(socket).catchError((_) {}),
+        );
       } catch (_) {
         // One failed connection must not take the listener down; the user
         // sees the failure in whatever app made the request.
@@ -155,8 +163,10 @@ class ForwardingService {
     if (remote == null) {
       throw SshFailure(
         kind: SshFailureKind.featureUnavailable,
-        message: 'The computer refused to listen on port ${profile.listenPort}.',
-        action: 'The SSH server may have GatewayPorts disabled, or the port '
+        message:
+            'The computer refused to listen on port ${profile.listenPort}.',
+        action:
+            'The SSH server may have GatewayPorts disabled, or the port '
             'may be in use.',
       );
     }
@@ -168,7 +178,9 @@ class ForwardingService {
       _notify();
       try {
         final socket = await Socket.connect(targetHost, targetPort);
-        unawaited(channel.stream.cast<List<int>>().pipe(socket).catchError((_) {}));
+        unawaited(
+          channel.stream.cast<List<int>>().pipe(socket).catchError((_) {}),
+        );
         unawaited(
           socket.cast<List<int>>().pipe(channel.sink).catchError((_) {}),
         );
@@ -209,6 +221,7 @@ class ForwardingService {
   Future<void> stop(String profileId) async {
     final forward = _active.remove(profileId);
     await forward?.stop();
+    if (forward != null) _stopWatchingHostIfUnused(forward.hostId);
     _notify();
   }
 
@@ -229,7 +242,29 @@ class ForwardingService {
     for (final forward in all) {
       await forward.stop();
     }
+    for (final subscription in _connectionWatches.values) {
+      await subscription.cancel();
+    }
+    _connectionWatches.clear();
     _notify();
+  }
+
+  void _watchConnection(SshConnection connection) {
+    if (_connectionWatches.containsKey(connection.host.id)) return;
+    _connectionWatches[connection.host.id] = connection.statusStream.listen((
+      status,
+    ) {
+      if (status.state == SshConnectionState.failed ||
+          status.state == SshConnectionState.closed) {
+        unawaited(stopForHost(connection.host.id));
+      }
+    }, onDone: () => unawaited(stopForHost(connection.host.id)));
+  }
+
+  void _stopWatchingHostIfUnused(String hostId) {
+    if (_active.values.any((forward) => forward.hostId == hostId)) return;
+    final subscription = _connectionWatches.remove(hostId);
+    if (subscription != null) unawaited(subscription.cancel());
   }
 
   void _notify() {

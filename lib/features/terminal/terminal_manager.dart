@@ -80,6 +80,32 @@ class TerminalManager extends ChangeNotifier {
     return null;
   }
 
+  /// An open tab that would run the same plan in the same context.
+  ///
+  /// Connect uses this to focus its existing terminal or retry an interrupted
+  /// one instead of quietly opening another shell. Callers that intentionally
+  /// need another terminal bypass this lookup and call [open] directly.
+  TerminalSession? findMatching({
+    required String hostId,
+    String? projectId,
+    required SessionLaunchPlan plan,
+  }) {
+    for (final tab in _tabs) {
+      final openedPlan = tab.launchPlan;
+      if (tab.host.id != hostId ||
+          tab.project?.id != projectId ||
+          openedPlan.mode != plan.mode ||
+          openedPlan.shellCommand != plan.shellCommand ||
+          openedPlan.initialInput != plan.initialInput ||
+          openedPlan.tmuxSessionName != plan.tmuxSessionName ||
+          openedPlan.workingDirectory != plan.workingDirectory) {
+        continue;
+      }
+      return tab;
+    }
+    return null;
+  }
+
   void setActive(String id) {
     if (_activeId == id) return;
     _activeId = id;
@@ -114,7 +140,11 @@ class TerminalManager extends ChangeNotifier {
     String? title,
     String? sessionRecordId,
   }) async {
-    await _enforceTabLimit();
+    // Avoid yielding before this tab is registered. A second Connect press
+    // must be able to find the tab while its SSH connection is starting.
+    if (_tabs.length >= maxTabs) {
+      await _enforceTabLimit();
+    }
 
     final session = TerminalSession(
       id: _uuid.v4(),
@@ -151,31 +181,33 @@ class TerminalManager extends ChangeNotifier {
     }
 
     final tmuxName = session.tmuxSessionName;
-    if (tmuxName != null) {
-      final existing = await sessions.byTmuxName(
-        hostId: session.host.id,
-        tmuxSessionName: tmuxName,
-      );
-      if (existing != null) {
-        await sessions.touch(existing.id);
-        return;
-      }
+    final now = DateTime.now();
+    final record = SessionRecord(
+      id: _uuid.v4(),
+      hostId: session.host.id,
+      projectId: session.project?.id,
+      tmuxSessionName: tmuxName,
+      displayName: session.title,
+      mode: session.launchPlan.mode,
+      workingDirectory: session.launchPlan.workingDirectory,
+      createdAt: now,
+      lastUsedAt: now,
+    );
+
+    if (tmuxName == null) {
+      await sessions.upsertDirectTarget(record);
+      return;
     }
 
-    final now = DateTime.now();
-    await sessions.upsert(
-      SessionRecord(
-        id: _uuid.v4(),
-        hostId: session.host.id,
-        projectId: session.project?.id,
-        tmuxSessionName: tmuxName,
-        displayName: session.title,
-        mode: session.launchPlan.mode,
-        workingDirectory: session.launchPlan.workingDirectory,
-        createdAt: now,
-        lastUsedAt: now,
-      ),
+    final existing = await sessions.byTmuxName(
+      hostId: session.host.id,
+      tmuxSessionName: tmuxName,
     );
+    if (existing != null) {
+      await sessions.touch(existing.id);
+      return;
+    }
+    await sessions.upsert(record);
   }
 
   /// Generates a managed tmux name that does not collide, checking both what

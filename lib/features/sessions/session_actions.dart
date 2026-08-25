@@ -22,6 +22,25 @@ Future<void> openHostTerminal(
 }) async {
   await _launch(context, ref, () async {
     final session = await ref.read(sessionLauncherProvider).openHostTerminal(
+      host: host,
+      preferences: ref.read(preferencesProvider),
+      mode: mode,
+    );
+    return session.id;
+  });
+}
+
+/// Opens an additional terminal instead of focusing the existing one.
+Future<void> openAdditionalHostTerminal(
+  BuildContext context,
+  WidgetRef ref,
+  Host host, {
+  SessionMode? mode,
+}) async {
+  await _launch(context, ref, () async {
+    final session = await ref
+        .read(sessionLauncherProvider)
+        .openAdditionalHostTerminal(
           host: host,
           preferences: ref.read(preferencesProvider),
           mode: mode,

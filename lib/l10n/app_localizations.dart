@@ -700,6 +700,12 @@ abstract class AppLocalizations {
   /// **'Open Terminal'**
   String get computerOpenTerminal;
 
+  /// No description provided for @computerNewTerminal.
+  ///
+  /// In en, this message translates to:
+  /// **'New Terminal'**
+  String get computerNewTerminal;
+
   /// No description provided for @computerResumeSession.
   ///
   /// In en, this message translates to:
@@ -1101,6 +1107,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Running now'**
   String get sessionsLive;
+
+  /// No description provided for @sessionsOpenTabs.
+  ///
+  /// In en, this message translates to:
+  /// **'Open tabs'**
+  String get sessionsOpenTabs;
+
+  /// No description provided for @terminalStateConnecting.
+  ///
+  /// In en, this message translates to:
+  /// **'Connecting'**
+  String get terminalStateConnecting;
+
+  /// No description provided for @terminalStateConnected.
+  ///
+  /// In en, this message translates to:
+  /// **'Connected'**
+  String get terminalStateConnected;
+
+  /// No description provided for @terminalStateDisconnected.
+  ///
+  /// In en, this message translates to:
+  /// **'Disconnected'**
+  String get terminalStateDisconnected;
+
+  /// No description provided for @terminalStateEnded.
+  ///
+  /// In en, this message translates to:
+  /// **'Ended'**
+  String get terminalStateEnded;
+
+  /// No description provided for @terminalStateFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed'**
+  String get terminalStateFailed;
 
   /// No description provided for @sessionsSaved.
   ///

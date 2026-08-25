@@ -83,6 +83,10 @@ class _HostDetailView extends ConsumerWidget {
           PopupMenuButton<String>(
             onSelected: (value) => _onMenu(context, ref, value),
             itemBuilder: (context) => [
+              PopupMenuItem(
+                value: 'new-terminal',
+                child: Text(l10n.computerNewTerminal),
+              ),
               PopupMenuItem(value: 'duplicate', child: Text(l10n.actionDuplicate)),
               if (status?.state == SshConnectionState.connected)
                 PopupMenuItem(
@@ -303,6 +307,8 @@ class _HostDetailView extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
 
     switch (value) {
+      case 'new-terminal':
+        await openAdditionalHostTerminal(context, ref, host);
       case 'duplicate':
         final now = DateTime.now();
         await ref.read(hostsRepositoryProvider).upsert(

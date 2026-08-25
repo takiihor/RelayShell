@@ -109,6 +109,30 @@ class SessionLauncher {
     required Host host,
     required AppPreferences preferences,
     SessionMode? mode,
+  }) => _openHostTerminal(
+    host: host,
+    preferences: preferences,
+    mode: mode,
+    reuseExisting: true,
+  );
+
+  /// Opens another independent terminal, even if an equivalent tab is live.
+  Future<TerminalSession> openAdditionalHostTerminal({
+    required Host host,
+    required AppPreferences preferences,
+    SessionMode? mode,
+  }) => _openHostTerminal(
+    host: host,
+    preferences: preferences,
+    mode: mode,
+    reuseExisting: false,
+  );
+
+  Future<TerminalSession> _openHostTerminal({
+    required Host host,
+    required AppPreferences preferences,
+    required SessionMode? mode,
+    required bool reuseExisting,
   }) async {
     final builder = _builderFor(host, preferences);
     final effectiveMode = _resolveMode(
@@ -117,20 +141,31 @@ class SessionLauncher {
     );
 
     final plan = switch (effectiveMode) {
-      SessionMode.direct =>
-        builder.directShell(workingDirectory: host.startupDirectory),
+      SessionMode.direct => builder.directShell(
+        workingDirectory: host.startupDirectory,
+      ),
       SessionMode.persistent => builder.persistentSession(
-          sessionName: await terminals.managedNameFor(
-            host: host,
-            subject: host.name,
-            prefix: preferences.tmuxSessionPrefix,
-            action: 'shell',
-          ),
-          workingDirectory: host.startupDirectory,
-        ),
+        sessionName: reuseExisting
+            ? builder.sessionNameFor(subject: host.name, action: 'shell')
+            : await terminals.managedNameFor(
+                host: host,
+                subject: host.name,
+                prefix: preferences.tmuxSessionPrefix,
+                action: 'shell',
+              ),
+        workingDirectory: host.startupDirectory,
+      ),
     };
 
-    await hosts.markConnected(host.id);
+    if (reuseExisting) {
+      final open = terminals.findMatching(hostId: host.id, plan: plan);
+      if (open != null) {
+        terminals.setActive(open.id);
+        if (open.canReconnect) await open.reconnect();
+        return open;
+      }
+    }
+
     return terminals.open(
       host: host,
       plan: plan,
@@ -180,7 +215,6 @@ class SessionLauncher {
     }
 
     await projects.markOpened(project.id);
-    await hosts.markConnected(host.id);
 
     return terminals.open(
       host: host,
@@ -242,7 +276,6 @@ class SessionLauncher {
     }
 
     await sessions.touch(record.id);
-    await hosts.markConnected(host.id);
 
     return terminals.open(
       host: host,
@@ -290,7 +323,8 @@ class SessionLauncher {
     Project? project,
     Map<String, String> inputs = const {},
   }) async {
-    final workingDirectory = command.workingDirectory?.trim().isNotEmpty ?? false
+    final workingDirectory =
+        command.workingDirectory?.trim().isNotEmpty ?? false
         ? command.workingDirectory!.trim()
         : project?.remotePath ?? host.startupDirectory;
 
@@ -371,7 +405,6 @@ class SessionLauncher {
     }
 
     if (project != null) await projects.markOpened(project.id);
-    await hosts.markConnected(host.id);
 
     return terminals.open(
       host: host,
@@ -383,9 +416,7 @@ class SessionLauncher {
   }
 
   /// Runs a prepared command once and returns its output (SPEC 12.4).
-  Future<OneShotResult> runOneShot({
-    required PreparedCommand prepared,
-  }) async {
+  Future<OneShotResult> runOneShot({required PreparedCommand prepared}) async {
     final connection = await connections.connect(prepared.host);
     final builder = SessionLaunchBuilder(
       platform: prepared.host.platform,

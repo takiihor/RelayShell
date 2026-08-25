@@ -181,8 +181,8 @@ class _HostOverflowMenu extends ConsumerWidget {
       icon: const Icon(Icons.more_vert),
       onSelected: (value) async {
         switch (value) {
-          case 'terminal':
-            await openHostTerminal(context, ref, host);
+          case 'new-terminal':
+            await openAdditionalHostTerminal(context, ref, host);
           case 'files':
             context.push(Routes.files(host.id));
           case 'projects':
@@ -201,10 +201,10 @@ class _HostOverflowMenu extends ConsumerWidget {
       },
       itemBuilder: (context) => [
         PopupMenuItem(
-          value: 'terminal',
+          value: 'new-terminal',
           child: ListTile(
             leading: const Icon(Icons.terminal),
-            title: Text(l10n.computerOpenTerminal),
+            title: Text(l10n.computerNewTerminal),
             contentPadding: EdgeInsets.zero,
           ),
         ),

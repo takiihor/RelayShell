@@ -318,6 +318,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get computerOpenTerminal => 'Open Terminal';
 
   @override
+  String get computerNewTerminal => 'New Terminal';
+
+  @override
   String get computerResumeSession => 'Resume Session';
 
   @override
@@ -538,6 +541,24 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get sessionsLive => 'Running now';
+
+  @override
+  String get sessionsOpenTabs => 'Open tabs';
+
+  @override
+  String get terminalStateConnecting => 'Connecting';
+
+  @override
+  String get terminalStateConnected => 'Connected';
+
+  @override
+  String get terminalStateDisconnected => 'Disconnected';
+
+  @override
+  String get terminalStateEnded => 'Ended';
+
+  @override
+  String get terminalStateFailed => 'Failed';
 
   @override
   String get sessionsSaved => 'Saved';

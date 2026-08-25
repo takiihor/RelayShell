@@ -12,6 +12,7 @@ import '../../shared/models/models.dart';
 import '../../shared/utilities/formatting.dart';
 import '../../shared/widgets/common.dart';
 import '../terminal/terminal_providers.dart';
+import '../terminal/terminal_session.dart';
 import 'session_actions.dart';
 
 /// Saved and live sessions (SPEC 11.3).
@@ -51,8 +52,9 @@ class SessionsScreen extends ConsumerWidget {
               title: l10n.sessionsEmptyTitle,
               body: l10n.sessionsEmptyBody,
               actionLabel: hosts.isEmpty ? l10n.computersAdd : null,
-              onAction:
-                  hosts.isEmpty ? () => context.push(Routes.hostNew) : null,
+              onAction: hosts.isEmpty
+                  ? () => context.push(Routes.hostNew)
+                  : null,
             );
           }
 
@@ -60,12 +62,15 @@ class SessionsScreen extends ConsumerWidget {
             padding: const EdgeInsets.only(bottom: 96),
             children: [
               if (terminals.tabs.isNotEmpty) ...[
-                SectionHeader(title: l10n.sessionsLive),
+                SectionHeader(title: l10n.sessionsOpenTabs),
                 for (final tab in terminals.tabs)
                   ListTile(
                     leading: const Icon(Icons.terminal),
                     title: Text(tab.title),
-                    subtitle: Text(tab.subtitle),
+                    subtitle: Text(
+                      '${_terminalStateLabel(l10n, tab.state)} · '
+                      '${tab.subtitle}',
+                    ),
                     trailing: TextButton(
                       onPressed: () {
                         terminals.setActive(tab.id);
@@ -77,8 +82,7 @@ class SessionsScreen extends ConsumerWidget {
               ],
               if (records.isNotEmpty) ...[
                 SectionHeader(title: l10n.sessionsSaved),
-                for (final record in records)
-                  _SessionTile(record: record),
+                for (final record in records) _SessionTile(record: record),
               ],
               for (final host in hosts.where(
                 (host) => host.platform.supportsTmux,
@@ -91,6 +95,15 @@ class SessionsScreen extends ConsumerWidget {
     );
   }
 }
+
+String _terminalStateLabel(AppLocalizations l10n, TerminalSessionState state) =>
+    switch (state) {
+      TerminalSessionState.starting => l10n.terminalStateConnecting,
+      TerminalSessionState.running => l10n.terminalStateConnected,
+      TerminalSessionState.disconnected => l10n.terminalStateDisconnected,
+      TerminalSessionState.ended => l10n.terminalStateEnded,
+      TerminalSessionState.failed => l10n.terminalStateFailed,
+    };
 
 class _SessionTile extends ConsumerWidget {
   const _SessionTile({required this.record});
@@ -162,12 +175,12 @@ class _SessionTile extends ConsumerWidget {
         if (!confirmed) return;
 
         try {
-          final connection =
-              await ref.read(connectionManagerProvider).connect(host);
-          await ref.read(tmuxServiceProvider).killSession(
-                connection,
-                record.tmuxSessionName!,
-              );
+          final connection = await ref
+              .read(connectionManagerProvider)
+              .connect(host);
+          await ref
+              .read(tmuxServiceProvider)
+              .killSession(connection, record.tmuxSessionName!);
           await ref.read(sessionsRepositoryProvider).delete(record.id);
         } on SshFailure catch (failure) {
           if (context.mounted) showFailure(context, failure);
@@ -213,8 +226,9 @@ class _HostTmuxSectionState extends ConsumerState<_HostTmuxSection> {
     });
 
     try {
-      final connection =
-          await ref.read(connectionManagerProvider).connect(widget.host);
+      final connection = await ref
+          .read(connectionManagerProvider)
+          .connect(widget.host);
       final tmux = ref.read(tmuxServiceProvider);
 
       final availability = await tmux.detect(connection);
@@ -232,7 +246,9 @@ class _HostTmuxSectionState extends ConsumerState<_HostTmuxSection> {
 
       // Records for sessions that no longer exist are dropped, so the Continue
       // list cannot offer work that has already ended.
-      await ref.read(sessionsRepositoryProvider).pruneMissingTmux(
+      await ref
+          .read(sessionsRepositoryProvider)
+          .pruneMissingTmux(
             hostId: widget.host.id,
             liveNames: sessions.map((session) => session.name).toSet(),
           );
@@ -242,8 +258,8 @@ class _HostTmuxSectionState extends ConsumerState<_HostTmuxSection> {
       if (mounted) {
         setState(() {
           _sessions = const [];
-          _unavailableReason =
-              AppLocalizations.of(context).sessionsTmuxMissingBody;
+          _unavailableReason = AppLocalizations.of(context)
+              .sessionsTmuxMissingBody;
         });
       }
     } on SshFailure catch (failure) {
@@ -292,8 +308,7 @@ class _HostTmuxSectionState extends ConsumerState<_HostTmuxSection> {
                 ),
                 const SizedBox(height: 8),
                 OutlinedButton(
-                  onPressed: () =>
-                      openHostTerminal(context, ref, widget.host),
+                  onPressed: () => openHostTerminal(context, ref, widget.host),
                   child: Text(l10n.sessionsUseDirect),
                 ),
               ],

@@ -448,6 +448,46 @@ void main() {
       },
     );
 
+    test('merges duplicate direct-session shortcuts for one target', () async {
+      final hosts = HostsRepository(database);
+      final sessions = SessionsRepository(database);
+      final earlier = DateTime.fromMillisecondsSinceEpoch(1000);
+      final latest = DateTime.fromMillisecondsSinceEpoch(2000);
+
+      await hosts.upsert(makeHost());
+      for (final (id, lastUsedAt) in [('older', earlier), ('newer', latest)]) {
+        await sessions.upsert(
+          SessionRecord(
+            id: id,
+            hostId: 'h1',
+            displayName: 'Home PC',
+            mode: SessionMode.direct,
+            workingDirectory: '/home/dev',
+            createdAt: earlier,
+            lastUsedAt: lastUsedAt,
+          ),
+        );
+      }
+
+      final refreshedAt = DateTime.fromMillisecondsSinceEpoch(3000);
+      await sessions.upsertDirectTarget(
+        SessionRecord(
+          id: 'unused-new-id',
+          hostId: 'h1',
+          displayName: 'Home PC',
+          mode: SessionMode.direct,
+          workingDirectory: '/home/dev',
+          createdAt: refreshedAt,
+          lastUsedAt: refreshedAt,
+        ),
+      );
+
+      final records = await sessions.all();
+      expect(records, hasLength(1));
+      expect(records.single.id, 'newer');
+      expect(records.single.lastUsedAt, refreshedAt);
+    });
+
     test('recent keeps separate projects and persistent sessions', () async {
       final hosts = HostsRepository(database);
       final projects = ProjectsRepository(database);

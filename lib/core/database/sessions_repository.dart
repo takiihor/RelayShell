@@ -105,6 +105,47 @@ class SessionsRepository extends Repository {
     notifyChanged();
   }
 
+  /// Stores one reusable shortcut for a direct terminal target.
+  ///
+  /// A direct shell has no remote state to preserve, so opening the same host,
+  /// folder and command again should refresh its shortcut rather than build an
+  /// unbounded local history. Existing duplicate records are merged here too.
+  Future<void> upsertDirectTarget(SessionRecord record) async {
+    final rows = await db.query(
+      table,
+      where: 'host_id = ? AND mode = ?',
+      whereArgs: [record.hostId, SessionMode.direct.storageValue],
+      orderBy: 'last_used_at DESC',
+    );
+    final matches = rows
+        .map(SessionRecord.fromRow)
+        .where((candidate) => _sameDirectTarget(candidate, record))
+        .toList();
+
+    if (matches.isEmpty) {
+      await upsert(record);
+      return;
+    }
+
+    final keep = matches.first;
+    await db.transaction((transaction) async {
+      await transaction.update(
+        table,
+        {'last_used_at': record.lastUsedAt.millisecondsSinceEpoch},
+        where: 'id = ?',
+        whereArgs: [keep.id],
+      );
+      for (final duplicate in matches.skip(1)) {
+        await transaction.delete(
+          table,
+          where: 'id = ?',
+          whereArgs: [duplicate.id],
+        );
+      }
+    });
+    notifyChanged();
+  }
+
   Future<void> touch(String id, {DateTime? at}) async {
     await db.update(
       table,
@@ -174,6 +215,14 @@ class SessionsRepository extends Repository {
     );
     return rows.map(SessionRecord.fromRow).toList();
   }
+
+  static bool _sameDirectTarget(SessionRecord a, SessionRecord b) =>
+      a.mode == SessionMode.direct &&
+      b.mode == SessionMode.direct &&
+      a.projectId == b.projectId &&
+      a.workingDirectory == b.workingDirectory &&
+      a.launchCommandId == b.launchCommandId &&
+      a.launchCommand == b.launchCommand;
 }
 
 /// Identity of a resumable target shown on Home.

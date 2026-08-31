@@ -683,6 +683,10 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get terminalSwipeHint =>
+      'Swipe left or right with two fingers to switch terminals, or tap the title above.';
+
+  @override
   String get terminalNoTabs => 'No terminals open';
 
   @override

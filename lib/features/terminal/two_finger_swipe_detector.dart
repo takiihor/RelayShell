@@ -25,6 +25,7 @@ class _TwoFingerSwipeDetectorState extends State<TwoFingerSwipeDetector> {
   static const _minimumDistance = 72.0;
   static const _minimumFingerDistance = 36.0;
   static const _maximumVerticalDistance = 48.0;
+  static const _minimumAxisDominance = 1.5;
 
   final _starts = <int, Offset>{};
   final _positions = <int, Offset>{};
@@ -62,6 +63,8 @@ class _TwoFingerSwipeDetectorState extends State<TwoFingerSwipeDetector> {
         first.dx.sign != second.dx.sign ||
         first.dy.abs() > _maximumVerticalDistance ||
         second.dy.abs() > _maximumVerticalDistance ||
+        first.dx.abs() < first.dy.abs() * _minimumAxisDominance ||
+        second.dx.abs() < second.dy.abs() * _minimumAxisDominance ||
         averageX.abs() < _minimumDistance) {
       return;
     }

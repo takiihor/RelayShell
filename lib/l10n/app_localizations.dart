@@ -1342,6 +1342,12 @@ abstract class AppLocalizations {
   /// **'Switched to {name}'**
   String terminalSwitched(String name);
 
+  /// No description provided for @terminalSwipeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Swipe left or right with two fingers to switch terminals, or tap the title above.'**
+  String get terminalSwipeHint;
+
   /// No description provided for @terminalNoTabs.
   ///
   /// In en, this message translates to:

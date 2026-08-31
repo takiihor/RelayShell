@@ -258,6 +258,7 @@
   "@terminalSwitched": {
     "placeholders": { "name": { "type": "String" } }
   },
+  "terminalSwipeHint": "Swipe left or right with two fingers to switch terminals, or tap the title above.",
   "terminalNoTabs": "No terminals open",
   "terminalCloseTab": "Close terminal",
   "terminalCloseTabConfirm": "Close this terminal? A direct session ends; a persistent one keeps running on the computer.",

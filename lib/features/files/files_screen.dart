@@ -247,7 +247,7 @@ class _FilesScreenState extends ConsumerState<FilesScreen> {
                   itemBuilder: (context, index) => _FileTile(
                     file: entries[index],
                     onTap: () => _onEntryTap(entries[index]),
-                    onLongPress: () => _showEntryMenu(entries[index]),
+                    onShowActions: () => _showEntryMenu(entries[index]),
                   ),
                 ),
         ),
@@ -555,12 +555,12 @@ class _FileTile extends StatelessWidget {
   const _FileTile({
     required this.file,
     required this.onTap,
-    required this.onLongPress,
+    required this.onShowActions,
   });
 
   final RemoteFile file;
   final VoidCallback onTap;
-  final VoidCallback onLongPress;
+  final VoidCallback onShowActions;
 
   @override
   Widget build(BuildContext context) {
@@ -590,9 +590,13 @@ class _FileTile extends StatelessWidget {
           fontSize: 11,
         ),
       ),
-      trailing: file.isDirectory ? const Icon(Icons.chevron_right) : null,
+      trailing: IconButton(
+        icon: const Icon(Icons.more_vert),
+        tooltip: MaterialLocalizations.of(context).moreButtonTooltip,
+        onPressed: onShowActions,
+      ),
       onTap: onTap,
-      onLongPress: onLongPress,
+      onLongPress: onShowActions,
     );
   }
 

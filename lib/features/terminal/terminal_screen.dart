@@ -13,6 +13,7 @@ import '../../shared/widgets/common.dart';
 import 'accessory_keyboard.dart';
 import 'terminal_providers.dart';
 import 'terminal_session.dart';
+import 'touch_selection_menu_detector.dart';
 import 'two_finger_swipe_detector.dart';
 
 /// The interactive terminal (SPEC 10).
@@ -29,6 +30,8 @@ class TerminalScreen extends ConsumerStatefulWidget {
 }
 
 class _TerminalScreenState extends ConsumerState<TerminalScreen> {
+  static bool _gestureHintShown = false;
+
   final FocusNode _focusNode = FocusNode();
   final ScrollController _scrollController = ScrollController();
   bool _wakeLockHeld = false;
@@ -111,6 +114,7 @@ class _TerminalScreenState extends ConsumerState<TerminalScreen> {
     }
 
     final namedTheme = TerminalThemeCatalog.byId(preferences.terminalThemeId);
+    _showGestureHintOnce(manager.tabs.length);
 
     return Scaffold(
       backgroundColor: namedTheme.theme.background,
@@ -134,30 +138,41 @@ class _TerminalScreenState extends ConsumerState<TerminalScreen> {
           Expanded(
             child: TwoFingerSwipeDetector(
               onSwipe: _switchTerminal,
-              child: TerminalView(
-                session.terminal,
-                controller: session.controller,
-                scrollController: _scrollController,
-                focusNode: _focusNode,
-                autofocus: true,
-                theme: namedTheme.theme,
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-                textStyle: TerminalStyle(
-                  fontSize: preferences.terminalFontSize,
-                  fontFamily: preferences.terminalFontFamily,
-                  fontFamilyFallback: TerminalFonts.fallbacks,
+              child: TouchSelectionMenuDetector(
+                onLongPressEnd: () => _showSelectionMenu(
+                  context,
+                  session,
+                  requireSelection: true,
                 ),
-                cursorType: switch (preferences.cursorStyle) {
-                  TerminalCursorStyle.block => TerminalCursorType.block,
-                  TerminalCursorStyle.underline => TerminalCursorType.underline,
-                  TerminalCursorStyle.bar => TerminalCursorType.verticalBar,
-                },
-                // Mobile IMEs often do not emit a hardware delete event, so the
-                // workaround is on by default here (SPEC 10.1).
-                deleteDetection: true,
-                onSecondaryTapDown: (details, offset) =>
-                    _showSelectionMenu(context, session),
-                readOnly: !session.isLive,
+                child: TerminalView(
+                  session.terminal,
+                  controller: session.controller,
+                  scrollController: _scrollController,
+                  focusNode: _focusNode,
+                  autofocus: true,
+                  theme: namedTheme.theme,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 4,
+                  ),
+                  textStyle: TerminalStyle(
+                    fontSize: preferences.terminalFontSize,
+                    fontFamily: preferences.terminalFontFamily,
+                    fontFamilyFallback: TerminalFonts.fallbacks,
+                  ),
+                  cursorType: switch (preferences.cursorStyle) {
+                    TerminalCursorStyle.block => TerminalCursorType.block,
+                    TerminalCursorStyle.underline =>
+                      TerminalCursorType.underline,
+                    TerminalCursorStyle.bar => TerminalCursorType.verticalBar,
+                  },
+                  // Mobile IMEs often do not emit a hardware delete event, so
+                  // the workaround is on by default here (SPEC 10.1).
+                  deleteDetection: true,
+                  onSecondaryTapDown: (details, offset) =>
+                      _showSelectionMenu(context, session),
+                  readOnly: !session.isLive,
+                ),
               ),
             ),
           ),
@@ -170,6 +185,16 @@ class _TerminalScreenState extends ConsumerState<TerminalScreen> {
         ],
       ),
     );
+  }
+
+  void _showGestureHintOnce(int terminalCount) {
+    if (_gestureHintShown || terminalCount < 2) return;
+    _gestureHintShown = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        showMessage(context, AppLocalizations.of(context).terminalSwipeHint);
+      }
+    });
   }
 
   /// Height of one terminal row, in logical pixels.
@@ -197,10 +222,12 @@ class _TerminalScreenState extends ConsumerState<TerminalScreen> {
 
   Future<void> _showSelectionMenu(
     BuildContext context,
-    TerminalSession session,
-  ) async {
+    TerminalSession session, {
+    bool requireSelection = false,
+  }) async {
     final l10n = AppLocalizations.of(context);
     final selection = session.selectedText();
+    if (requireSelection && selection == null) return;
 
     await showModalBottomSheet<void>(
       context: context,
@@ -490,6 +517,15 @@ class _TerminalAppBar extends ConsumerWidget implements PreferredSizeWidget {
               child: Text(
                 l10n.terminalTabs,
                 style: Theme.of(sheetContext).textTheme.titleMedium,
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              child: Text(
+                l10n.terminalSwipeHint,
+                style: Theme.of(sheetContext).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(sheetContext).colorScheme.onSurfaceVariant,
+                ),
               ),
             ),
             for (final tab in manager.tabs)

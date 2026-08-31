@@ -239,11 +239,11 @@ class _AccessoryKeyboardState extends State<AccessoryKeyboard> {
             for (final row in widget.rows)
               if (row.isNotEmpty)
                 SizedBox(
-                  height: 44,
+                  height: 56,
                   child: ListView(
                     scrollDirection: Axis.horizontal,
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
+                      horizontal: 4,
                       vertical: 4,
                     ),
                     children: [
@@ -293,7 +293,7 @@ class _KeyButton extends StatelessWidget {
     final locked = state == ModifierState.locked;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 4),
       child: Semantics(
         button: true,
         label: accessoryKey.label,
@@ -308,7 +308,10 @@ class _KeyButton extends StatelessWidget {
             onLongPress: onLongPress,
             borderRadius: BorderRadius.circular(8),
             child: Container(
-              constraints: BoxConstraints(minWidth: 40 * accessoryKey.width),
+              constraints: BoxConstraints(
+                minWidth: 48 * accessoryKey.width,
+                minHeight: 48,
+              ),
               padding: const EdgeInsets.symmetric(horizontal: 10),
               alignment: Alignment.center,
               child: Row(

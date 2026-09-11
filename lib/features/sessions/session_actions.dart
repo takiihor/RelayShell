@@ -117,8 +117,13 @@ Future<void> openProjectTerminal(
   });
 }
 
-/// Opens a project directly in Conversation Mode while preserving the project's
-/// configured working directory and persistent-session behavior.
+/// Opens a project directly in Conversation Mode while preserving its working
+/// directory but isolating it from a configured default tmux/Herdr session.
+///
+/// That default session may legitimately be running Codex, vim, or another TUI;
+/// Conversation framing must start in a clean shell instead. Clearing the name
+/// only on this in-memory copy makes SessionLauncher allocate a separate managed
+/// session without changing the saved Project configuration.
 Future<void> openProjectConversation(
   BuildContext context,
   WidgetRef ref,
@@ -138,6 +143,7 @@ Future<void> openProjectConversation(
   }
 
   if (!context.mounted) return;
+  final isolatedProject = project.copyWith(defaultTmuxName: null);
   await _launch(
     context,
     ref,
@@ -145,7 +151,7 @@ Future<void> openProjectConversation(
       final session = await ref
           .read(sessionLauncherProvider)
           .openProject(
-            project: project,
+            project: isolatedProject,
             host: host,
             preferences: ref.read(preferencesProvider),
             mode: mode,

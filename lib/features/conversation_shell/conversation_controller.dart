@@ -26,6 +26,9 @@ class ConversationController extends ChangeNotifier {
   static const String _recordSeparator = '\x1e';
   static const String _unitSeparator = '\x1f';
   static const int _markerTail = 192;
+  static final RegExp _ansiEscape = RegExp(
+    r'\x1B(?:\[[0-?]*[ -/]*[@-~]|\][^\x07]*(?:\x07|\x1B\\))',
+  );
 
   StreamSubscription<String>? _outputSubscription;
   final List<ConversationCommand> _commands = [];
@@ -188,7 +191,7 @@ class ConversationController extends ChangeNotifier {
     if (index < 0) return;
 
     final current = _commands[index];
-    var output = current.output + text;
+    var output = _plainText(current.output + text);
     var truncated = current.truncated;
     if (output.length > maxRenderedCharacters) {
       output = output.substring(output.length - maxRenderedCharacters);
@@ -197,6 +200,11 @@ class ConversationController extends ChangeNotifier {
     _commands[index] = current.copyWith(output: output, truncated: truncated);
     notifyListeners();
   }
+
+  static String _plainText(String value) => value
+      .replaceAll(_ansiEscape, '')
+      .replaceAll('\r\n', '\n')
+      .replaceAll('\r', '');
 
   void _complete(String id, int? exitCode) {
     final index = _commands.indexWhere((command) => command.id == id);

@@ -32,8 +32,12 @@ Future<void> openHostTerminal(
   });
 }
 
-/// Opens the mobile-first Conversation Mode over the same persistent PTY that
-/// Terminal Mode uses. No LLM or command translation sits in this path.
+/// Opens the mobile-first Conversation Mode over a fresh interactive PTY.
+///
+/// A normal terminal tab may currently be inside vim/htop/Codex, so reusing it
+/// would risk sending the framing protocol into a TUI. The new tab still shares
+/// the host's SSH transport and, in persistent mode, gets its own managed
+/// multiplexer session. Terminal Mode can then open this exact PTY if needed.
 Future<void> openHostConversation(
   BuildContext context,
   WidgetRef ref,
@@ -46,7 +50,7 @@ Future<void> openHostConversation(
     () async {
       final session = await ref
           .read(sessionLauncherProvider)
-          .openHostTerminal(
+          .openAdditionalHostTerminal(
             host: host,
             preferences: ref.read(preferencesProvider),
             mode: mode,

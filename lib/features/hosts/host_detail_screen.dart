@@ -60,6 +60,7 @@ class _HostDetailView extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
+    final supportsConversation = host.platform == RemotePlatform.posix;
     final status = ref.watch(hostConnectionStatusProvider(host.id)).value;
     final projects =
         ref.watch(projectsForHostProvider(host.id)).value ?? const [];
@@ -144,23 +145,23 @@ class _HostDetailView extends ConsumerWidget {
                       children: [
                         Expanded(
                           child: FilledButton.icon(
-                            onPressed: () => host.platform.supportsMultiplexer
+                            onPressed: () => supportsConversation
                                 ? openHostConversation(context, ref, host)
                                 : openHostTerminal(context, ref, host),
                             icon: Icon(
-                              host.platform.supportsMultiplexer
+                              supportsConversation
                                   ? Icons.chat_bubble_outline
                                   : Icons.terminal,
                               size: 18,
                             ),
                             label: Text(
-                              host.platform.supportsMultiplexer
+                              supportsConversation
                                   ? l10n.computerRunCommand
                                   : l10n.computerOpenTerminal,
                             ),
                           ),
                         ),
-                        if (host.platform.supportsMultiplexer) ...[
+                        if (supportsConversation) ...[
                           const SizedBox(width: 8),
                           IconButton.outlined(
                             onPressed: () =>

@@ -59,6 +59,7 @@ class _ProjectDetailView extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final host = ref.watch(hostProvider(project.hostId)).value;
+    final supportsConversation = host?.platform == RemotePlatform.posix;
     final commands =
         ref
             .watch(
@@ -160,11 +161,40 @@ class _ProjectDetailView extends ConsumerWidget {
                       ),
                     ),
                     const SizedBox(height: 14),
-                    FilledButton.icon(
-                      onPressed: () =>
-                          openProjectTerminal(context, ref, project),
-                      icon: const Icon(Icons.terminal, size: 18),
-                      label: Text(l10n.projectOpenTerminal),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: FilledButton.icon(
+                            onPressed: () => supportsConversation
+                                ? openProjectConversation(
+                                    context,
+                                    ref,
+                                    project,
+                                  )
+                                : openProjectTerminal(context, ref, project),
+                            icon: Icon(
+                              supportsConversation
+                                  ? Icons.chat_bubble_outline
+                                  : Icons.terminal,
+                              size: 18,
+                            ),
+                            label: Text(
+                              supportsConversation
+                                  ? l10n.computerRunCommand
+                                  : l10n.projectOpenTerminal,
+                            ),
+                          ),
+                        ),
+                        if (supportsConversation) ...[
+                          const SizedBox(width: 8),
+                          IconButton.outlined(
+                            onPressed: () =>
+                                openProjectTerminal(context, ref, project),
+                            icon: const Icon(Icons.terminal),
+                            tooltip: l10n.projectOpenTerminal,
+                          ),
+                        ],
+                      ],
                     ),
                   ],
                 ),

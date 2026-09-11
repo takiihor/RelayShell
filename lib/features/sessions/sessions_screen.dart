@@ -4,9 +4,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/providers.dart';
 import '../../shared/navigation/routes.dart';
-import '../../core/shell/tmux.dart';
+import '../../core/shell/multiplexer_session.dart';
 import '../../core/ssh/ssh_failure.dart';
-import '../../core/ssh/tmux_service.dart';
 import '../../l10n/app_localizations.dart';
 import '../../shared/models/models.dart';
 import '../../shared/utilities/formatting.dart';
@@ -85,7 +84,7 @@ class SessionsScreen extends ConsumerWidget {
                 for (final record in records) _SessionTile(record: record),
               ],
               for (final host in hosts.where(
-                (host) => host.platform.supportsTmux,
+                (host) => host.platform.supportsMultiplexer,
               ))
                 _HostTmuxSection(host: host),
             ],
@@ -179,12 +178,12 @@ class _SessionTile extends ConsumerWidget {
               .read(connectionManagerProvider)
               .connect(host);
           await ref
-              .read(tmuxServiceProvider)
+              .read(multiplexerServiceProvider)
               .killSession(connection, record.tmuxSessionName!);
           await ref.read(sessionsRepositoryProvider).delete(record.id);
         } on SshFailure catch (failure) {
           if (context.mounted) showFailure(context, failure);
-        } on TmuxOperationException catch (error) {
+        } on MultiplexerOperationException catch (error) {
           if (context.mounted) {
             showMessage(context, error.message, isError: true);
           }
@@ -215,7 +214,7 @@ class _HostTmuxSection extends ConsumerStatefulWidget {
 }
 
 class _HostTmuxSectionState extends ConsumerState<_HostTmuxSection> {
-  List<TmuxSession>? _sessions;
+  List<MultiplexerSession>? _sessions;
   String? _unavailableReason;
   bool _loading = false;
 
@@ -229,9 +228,9 @@ class _HostTmuxSectionState extends ConsumerState<_HostTmuxSection> {
       final connection = await ref
           .read(connectionManagerProvider)
           .connect(widget.host);
-      final tmux = ref.read(tmuxServiceProvider);
+      final service = ref.read(multiplexerServiceProvider);
 
-      final availability = await tmux.detect(connection);
+      final availability = await service.detect(connection);
       if (!availability.available) {
         if (mounted) {
           setState(() {
@@ -242,7 +241,7 @@ class _HostTmuxSectionState extends ConsumerState<_HostTmuxSection> {
         return;
       }
 
-      final sessions = await tmux.listSessions(connection);
+      final sessions = await service.listSessions(connection);
 
       // Records for sessions that no longer exist are dropped, so the Continue
       // list cannot offer work that has already ended.
@@ -254,12 +253,13 @@ class _HostTmuxSectionState extends ConsumerState<_HostTmuxSection> {
           );
 
       if (mounted) setState(() => _sessions = sessions);
-    } on TmuxUnavailableException {
+    } on MultiplexerUnavailableException catch (error) {
       if (mounted) {
         setState(() {
           _sessions = const [];
-          _unavailableReason = AppLocalizations.of(context)
-              .sessionsTmuxMissingBody;
+          _unavailableReason = AppLocalizations.of(
+            context,
+          ).sessionsTmuxMissingBody(error.kind.label);
         });
       }
     } on SshFailure catch (failure) {

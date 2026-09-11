@@ -5,7 +5,9 @@ import 'package:dartssh2/dartssh2.dart';
 import 'package:flutter/foundation.dart';
 import 'package:xterm/xterm.dart';
 
+import '../../core/shell/multiplexer.dart';
 import '../../core/shell/session_launch.dart';
+import '../../core/shell/shell_quoting.dart';
 import '../../core/ssh/connection_manager.dart';
 import '../../core/ssh/ssh_connection.dart';
 import '../../core/ssh/ssh_failure.dart';
@@ -89,8 +91,11 @@ class TerminalSession extends ChangeNotifier {
   String _title;
   String get title => _title;
 
-  /// The managed tmux session this terminal is attached to, if any.
+  /// The managed multiplexer session this terminal is attached to, if any.
   String? get tmuxSessionName => launchPlan.tmuxSessionName;
+
+  /// The backend anchoring this terminal, or null for a direct shell.
+  MultiplexerKind? get multiplexer => launchPlan.multiplexer;
 
   bool get isPersistent => launchPlan.mode == SessionMode.persistent;
 
@@ -101,12 +106,13 @@ class TerminalSession extends ChangeNotifier {
       _state == TerminalSessionState.failed ||
       _state == TerminalSessionState.ended;
 
-  /// Subtitle shown in the terminal switcher, e.g. `Home PC · tmux`.
+  /// Subtitle shown in the terminal switcher, e.g. `Home PC · tmux: rdc-api`.
   String get subtitle {
     final parts = <String>[host.name];
-    final tmux = tmuxSessionName;
-    if (tmux != null) {
-      parts.add('tmux: $tmux');
+    final name = tmuxSessionName;
+    if (name != null) {
+      final label = multiplexer?.storageValue ?? 'session';
+      parts.add('$label: $name');
     } else {
       parts.add('shell');
     }
@@ -144,8 +150,9 @@ class TerminalSession extends ChangeNotifier {
 
     final SSHSession shell;
     if (plan.usesExec) {
-      // A persistent session execs `tmux new-session -A`, so the channel *is*
-      // the tmux client; detaching or killing tmux ends the channel cleanly.
+      // A persistent session execs the backend's attach-or-create, so the
+      // channel *is* the multiplexer client; detaching or killing the session
+      // ends the channel cleanly.
       shell = await connection.execute(
         plan.shellCommand!,
         pty: true,
@@ -326,13 +333,16 @@ class TerminalSession extends ChangeNotifier {
 
   void clearSelection() => controller.clearSelection();
 
-  /// Detaches from tmux without ending the remote session.
+  /// Detaches from the multiplexer without ending the remote session.
   ///
-  /// Sends the tmux detach binding rather than closing the channel, so tmux
-  /// tears the client down in its own time and the work keeps running.
-  void detachTmux() {
-    if (!isPersistent) return;
-    sendRaw('\x02d');
+  /// Sends the backend's detach binding rather than closing the channel, so it
+  /// tears its client down in its own time and the work keeps running. tmux and
+  /// Herdr share the `Ctrl+B` prefix but differ in the key that follows, so the
+  /// sequence comes from the backend rather than being hard-coded here.
+  void detach() {
+    final kind = multiplexer;
+    if (!isPersistent || kind == null) return;
+    sendRaw(Multiplexer.of(kind, quoter: ShellQuoter.posix).detachSequence);
   }
 
   Future<void> _detachShell() async {

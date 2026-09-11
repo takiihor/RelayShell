@@ -519,7 +519,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sessionModeDirect => 'Direct';
 
   @override
-  String get sessionModePersistent => 'Persistent (tmux)';
+  String get sessionModePersistent => 'Persistent';
+
+  @override
+  String sessionModePersistentNamed(String name) {
+    return 'Persistent ($name)';
+  }
 
   @override
   String get sessionModeDirectHelp =>
@@ -596,11 +601,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sessionsNew => 'New Session';
 
   @override
-  String get sessionsTmuxMissingTitle => 'tmux is not installed';
+  String sessionsTmuxMissingTitle(String name) {
+    return '$name is not installed';
+  }
 
   @override
-  String get sessionsTmuxMissingBody =>
-      'Persistent sessions need tmux on the computer. Install it there, or use a direct terminal.';
+  String sessionsTmuxMissingBody(String name) {
+    return 'Persistent sessions need $name on the computer. Install it there, choose a different multiplexer for this computer, or use a direct terminal.';
+  }
 
   @override
   String get sessionsUseDirect => 'Use direct terminal';
@@ -1337,6 +1345,43 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsMaxReconnects => 'Maximum retries';
+
+  @override
+  String get computerFieldMultiplexer => 'Persistent sessions';
+
+  @override
+  String get computerFieldMultiplexerHelp =>
+      'Which terminal multiplexer anchors this computer\'s persistent sessions. It must already be installed there.';
+
+  @override
+  String get multiplexerTmux => 'tmux';
+
+  @override
+  String get multiplexerHerdr => 'Herdr';
+
+  @override
+  String get multiplexerHerdrHelp =>
+      'Built for coding agents. Captures the mouse, so the terminal scrolls by dragging.';
+
+  @override
+  String get multiplexerTmuxHelp =>
+      'Available on almost every machine. RelayShell turns on mouse mode so the terminal scrolls.';
+
+  @override
+  String get settingsDefaultMultiplexer => 'Default for new computers';
+
+  @override
+  String multiplexerUnavailable(String name) {
+    return '$name is not installed on this computer.';
+  }
+
+  @override
+  String multiplexerCannotRename(String name) {
+    return '$name cannot rename a running session.';
+  }
+
+  @override
+  String get terminalDetach => 'Detach, leave running';
 
   @override
   String get settingsTmuxPrefix => 'tmux session prefix';

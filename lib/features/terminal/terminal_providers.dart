@@ -15,7 +15,7 @@ final terminalManagerProvider = ChangeNotifierProvider<TerminalManager>((ref) {
   return TerminalManager(
     connections: services.connections,
     sessions: services.sessions,
-    tmux: services.tmux,
+    multiplexer: services.multiplexer,
   );
 });
 

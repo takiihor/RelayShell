@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/providers.dart';
 import '../../shared/navigation/routes.dart';
-import '../../core/shell/tmux.dart';
+import '../../core/shell/multiplexer_session.dart';
 import '../../core/ssh/ssh_failure.dart';
 import '../../l10n/app_localizations.dart';
 import '../../shared/models/models.dart';
@@ -127,7 +127,7 @@ Future<void> attachTmuxSession(
   BuildContext context,
   WidgetRef ref,
   Host host,
-  TmuxSession session,
+  MultiplexerSession session,
 ) async {
   await _launch(context, ref, () async {
     final terminal = await ref
@@ -182,13 +182,13 @@ Future<void> _launch(
       return;
     }
     showFailure(context, failure);
-  } on TmuxUnavailableException {
+  } on MultiplexerUnavailableException catch (error) {
     if (dialogOpen && navigator.canPop()) navigator.pop();
     dialogOpen = false;
     if (!context.mounted) return;
     showMessage(
       context,
-      AppLocalizations.of(context).sessionsTmuxMissingBody,
+      AppLocalizations.of(context).sessionsTmuxMissingBody(error.kind.label),
       isError: true,
     );
   } on LaunchException catch (error) {

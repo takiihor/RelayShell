@@ -5,9 +5,9 @@ import 'package:uuid/uuid.dart';
 
 import '../../core/database/sessions_repository.dart';
 import '../../core/shell/session_launch.dart';
-import '../../core/shell/tmux.dart';
+import '../../core/shell/multiplexer.dart';
 import '../../core/ssh/connection_manager.dart';
-import '../../core/ssh/tmux_service.dart';
+import '../../core/ssh/multiplexer_service.dart';
 import '../../shared/models/models.dart';
 import 'terminal_session.dart';
 
@@ -33,13 +33,13 @@ class TerminalManager extends ChangeNotifier {
   TerminalManager({
     required this.connections,
     required this.sessions,
-    required this.tmux,
+    required this.multiplexer,
     Uuid? uuid,
   }) : _uuid = uuid ?? const Uuid();
 
   final ConnectionManager connections;
   final SessionsRepository sessions;
-  final TmuxService tmux;
+  final MultiplexerService multiplexer;
   final Uuid _uuid;
 
   /// Beyond this, opening a new terminal may close an inactive tab only.
@@ -231,9 +231,12 @@ class TerminalManager extends ChangeNotifier {
     final known = await sessions.tmuxNamesForHost(host.id);
     final connection = connections.connectionFor(host.id);
     if (connection != null && connection.isConnected) {
-      known.addAll(await tmux.sessionNames(connection));
+      known.addAll(await multiplexer.sessionNames(connection));
     }
-    return TmuxCommandBuilder.managedSessionName(
+    return Multiplexer.forPlatform(
+      host.multiplexer,
+      host.platform,
+    ).managedSessionName(
       prefix: prefix,
       subject: subject,
       action: action,

@@ -158,7 +158,7 @@ class _HostDetailView extends ConsumerWidget {
                         ),
                       ],
                     ),
-                    if (host.platform.supportsTmux) ...[
+                    if (host.platform.supportsMultiplexer) ...[
                       const SizedBox(height: 8),
                       OutlinedButton.icon(
                         onPressed: () => openHostTerminal(
@@ -168,7 +168,11 @@ class _HostDetailView extends ConsumerWidget {
                           mode: SessionMode.persistent,
                         ),
                         icon: const Icon(Icons.play_circle_outline, size: 18),
-                        label: Text(l10n.sessionModePersistent),
+                        label: Text(
+                          l10n.sessionModePersistentNamed(
+                            host.multiplexer.label,
+                          ),
+                        ),
                       ),
                     ],
                     if (wol != null) ...[

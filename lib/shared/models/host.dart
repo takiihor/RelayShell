@@ -24,6 +24,7 @@ class Host {
     this.environmentNotes,
     this.colorValue,
     this.platform = RemotePlatform.posix,
+    this.multiplexer = MultiplexerKind.tmux,
     this.favorite = false,
     this.lastConnectedAt,
   });
@@ -41,6 +42,13 @@ class Host {
   final String? environmentNotes;
   final int? colorValue;
   final RemotePlatform platform;
+
+  /// Backend used for this host's persistent sessions.
+  ///
+  /// Per-host rather than global because it depends on what is installed on
+  /// that machine; defaults to tmux, which is the safe assumption.
+  final MultiplexerKind multiplexer;
+
   final bool favorite;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -64,6 +72,7 @@ class Host {
     Object? environmentNotes = _unset,
     Object? colorValue = _unset,
     RemotePlatform? platform,
+    MultiplexerKind? multiplexer,
     bool? favorite,
     DateTime? updatedAt,
     Object? lastConnectedAt = _unset,
@@ -86,6 +95,7 @@ class Host {
           : environmentNotes as String?,
       colorValue: colorValue == _unset ? this.colorValue : colorValue as int?,
       platform: platform ?? this.platform,
+      multiplexer: multiplexer ?? this.multiplexer,
       favorite: favorite ?? this.favorite,
       createdAt: createdAt,
       updatedAt: updatedAt ?? DateTime.now(),
@@ -107,6 +117,7 @@ class Host {
     'environment_notes': environmentNotes,
     'color_value': colorValue,
     'platform': platform.storageValue,
+    'multiplexer': multiplexer.storageValue,
     'favorite': favorite ? 1 : 0,
     'created_at': createdAt.millisecondsSinceEpoch,
     'updated_at': updatedAt.millisecondsSinceEpoch,
@@ -125,6 +136,7 @@ class Host {
     environmentNotes: row['environment_notes'] as String?,
     colorValue: row['color_value'] as int?,
     platform: RemotePlatform.fromStorage(row['platform'] as String?),
+    multiplexer: MultiplexerKind.fromStorage(row['multiplexer'] as String?),
     favorite: (row['favorite'] as int? ?? 0) == 1,
     createdAt: DateTime.fromMillisecondsSinceEpoch(row['created_at']! as int),
     updatedAt: DateTime.fromMillisecondsSinceEpoch(row['updated_at']! as int),
@@ -146,6 +158,7 @@ class Host {
     'environment_notes': environmentNotes,
     'color_value': colorValue,
     'platform': platform.storageValue,
+    'multiplexer': multiplexer.storageValue,
     'favorite': favorite,
   };
 
@@ -162,6 +175,7 @@ class Host {
       environmentNotes: json['environment_notes'] as String?,
       colorValue: (json['color_value'] as num?)?.toInt(),
       platform: RemotePlatform.fromStorage(json['platform'] as String?),
+      multiplexer: MultiplexerKind.fromStorage(json['multiplexer'] as String?),
       favorite: json['favorite'] == true,
       createdAt: now,
       updatedAt: now,

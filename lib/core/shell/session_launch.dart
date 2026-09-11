@@ -1,8 +1,9 @@
 import 'package:flutter/foundation.dart';
 
 import '../../shared/models/enums.dart';
+import 'multiplexer.dart';
+import 'multiplexer_session.dart';
 import 'shell_quoting.dart';
-import 'tmux.dart';
 
 /// A fully-resolved description of what to run when a session opens.
 ///
@@ -19,11 +20,15 @@ class SessionLaunchPlan {
     required this.mode,
     this.shellCommand,
     this.initialInput,
+    this.multiplexer,
     this.tmuxSessionName,
     this.workingDirectory,
   });
 
   final SessionMode mode;
+
+  /// Backend anchoring this session. Null for a direct shell.
+  final MultiplexerKind? multiplexer;
 
   /// Command to exec instead of a login shell, already quoted.
   final String? shellCommand;
@@ -45,16 +50,23 @@ class SessionLaunchPlan {
 /// [ShellQuoter]. The one deliberate exception is a user's saved command body,
 /// which is intentional shell input (SPEC 29) and is passed through unchanged.
 class SessionLaunchBuilder {
-  const SessionLaunchBuilder({required this.platform, required this.prefix});
+  const SessionLaunchBuilder({
+    required this.platform,
+    required this.prefix,
+    this.multiplexer = MultiplexerKind.tmux,
+  });
 
   final RemotePlatform platform;
 
-  /// Prefix for managed tmux session names, from preferences.
+  /// Prefix for managed session names, from preferences.
   final String prefix;
+
+  /// Backend used for persistent sessions on this host.
+  final MultiplexerKind multiplexer;
 
   ShellQuoter get quoter => ShellQuoter.forPlatform(platform);
 
-  TmuxCommandBuilder get tmux => TmuxCommandBuilder(quoter: quoter);
+  Multiplexer get backend => Multiplexer.of(multiplexer, quoter: quoter);
 
   /// Plain interactive shell, optionally starting in [workingDirectory].
   ///
@@ -83,28 +95,49 @@ class SessionLaunchBuilder {
     );
   }
 
-  /// Attaches to (or creates) a managed tmux session.
+  /// Attaches to (or creates) a managed multiplexer session.
   ///
-  /// Throws [TmuxUnavailableException] for platforms without tmux so callers
-  /// cannot accidentally emit `tmux ...` at a PowerShell prompt.
+  /// Throws [MultiplexerUnavailableException] for platforms without one so
+  /// callers cannot accidentally emit `tmux ...` at a PowerShell prompt.
+  ///
+  /// A backend that cannot take a startup command (Herdr) gets the command
+  /// typed into the attached session instead of appended to the attach line.
+  /// Same reasoning as [directCommand]: a command that fails leaves the user at
+  /// a usable prompt rather than tearing down the session they just opened.
   SessionLaunchPlan persistentSession({
     required String sessionName,
     String? workingDirectory,
     String? command,
   }) {
-    if (!platform.supportsTmux) throw const TmuxUnavailableException();
+    if (!platform.supportsMultiplexer) {
+      throw MultiplexerUnavailableException(multiplexer);
+    }
 
-    final remote = command == null || command.trim().isEmpty
-        ? tmux.attachOrCreate(sessionName, workingDirectory: workingDirectory)
-        : tmux.attachOrCreateRunning(
-            sessionName,
-            command,
-            workingDirectory: workingDirectory,
-          );
+    final backend = this.backend;
+    final hasCommand = command != null && command.trim().isNotEmpty;
+
+    if (hasCommand && backend.supportsStartupCommand) {
+      return SessionLaunchPlan(
+        mode: SessionMode.persistent,
+        shellCommand: backend.attachOrCreateRunning(
+          sessionName,
+          command,
+          workingDirectory: workingDirectory,
+        ),
+        multiplexer: multiplexer,
+        tmuxSessionName: sessionName,
+        workingDirectory: workingDirectory,
+      );
+    }
 
     return SessionLaunchPlan(
       mode: SessionMode.persistent,
-      shellCommand: remote,
+      shellCommand: backend.attachOrCreate(
+        sessionName,
+        workingDirectory: workingDirectory,
+      ),
+      initialInput: hasCommand ? '$command\n' : null,
+      multiplexer: multiplexer,
       tmuxSessionName: sessionName,
       workingDirectory: workingDirectory,
     );
@@ -112,10 +145,13 @@ class SessionLaunchBuilder {
 
   /// Reattaches to an existing managed session without creating a new one.
   SessionLaunchPlan resumeSession(String sessionName) {
-    if (!platform.supportsTmux) throw const TmuxUnavailableException();
+    if (!platform.supportsMultiplexer) {
+      throw MultiplexerUnavailableException(multiplexer);
+    }
     return SessionLaunchPlan(
       mode: SessionMode.persistent,
-      shellCommand: tmux.attachOrCreate(sessionName),
+      shellCommand: backend.attachOrCreate(sessionName),
+      multiplexer: multiplexer,
       tmuxSessionName: sessionName,
     );
   }
@@ -134,7 +170,7 @@ class SessionLaunchBuilder {
     required String subject,
     String? action,
     Set<String> existingNames = const {},
-  }) => TmuxCommandBuilder.managedSessionName(
+  }) => backend.managedSessionName(
     prefix: prefix,
     subject: subject,
     action: action,

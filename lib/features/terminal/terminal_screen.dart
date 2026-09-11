@@ -383,7 +383,7 @@ class _TerminalAppBar extends ConsumerWidget implements PreferredSizeWidget {
             if (session.isPersistent)
               PopupMenuItem(
                 value: 'detach',
-                child: Text(l10n.sessionModePersistent),
+                child: Text(l10n.terminalDetach),
               ),
             PopupMenuItem(value: 'close', child: Text(l10n.actionDisconnect)),
           ],
@@ -418,7 +418,7 @@ class _TerminalAppBar extends ConsumerWidget implements PreferredSizeWidget {
       case 'detach':
         // Detaching leaves the tmux session running on the computer, which is
         // the whole point of a persistent session.
-        session.detachTmux();
+        session.detach();
         if (context.mounted) {
           showMessage(context, l10n.sessionModePersistentHelp);
         }
@@ -470,7 +470,10 @@ class _TerminalAppBar extends ConsumerWidget implements PreferredSizeWidget {
                 value: session.host.displaySubtitle,
               ),
               if (session.tmuxSessionName != null)
-                _InfoRow(label: 'tmux', value: session.tmuxSessionName!),
+                _InfoRow(
+                  label: session.multiplexer?.label ?? '',
+                  value: session.tmuxSessionName!,
+                ),
               if (session.launchPlan.workingDirectory != null)
                 _InfoRow(
                   label: l10n.commandFieldWorkingDirectory,

@@ -42,6 +42,7 @@ class _HostEditScreenState extends ConsumerState<HostEditScreen> {
 
   AuthMethod _authMethod = AuthMethod.privateKey;
   RemotePlatform _platform = RemotePlatform.posix;
+  MultiplexerKind _multiplexer = MultiplexerKind.tmux;
   String? _credentialId;
   bool _favorite = false;
   bool _wolEnabled = false;
@@ -59,6 +60,10 @@ class _HostEditScreenState extends ConsumerState<HostEditScreen> {
   void initState() {
     super.initState();
     if (_isNew) {
+      // A new computer starts on the user's preferred backend; from then on the
+      // choice belongs to the host, because it depends on what is installed
+      // there rather than on a global taste.
+      _multiplexer = ref.read(preferencesProvider).defaultMultiplexer;
       _loaded = true;
     } else {
       _load();
@@ -83,6 +88,7 @@ class _HostEditScreenState extends ConsumerState<HostEditScreen> {
       _notes.text = host.environmentNotes ?? '';
       _authMethod = host.authMethod;
       _platform = host.platform;
+      _multiplexer = host.multiplexer;
       _credentialId = host.credentialId;
       _favorite = host.favorite;
       if (wol != null) {
@@ -128,6 +134,7 @@ class _HostEditScreenState extends ConsumerState<HostEditScreen> {
         startupDirectory: _emptyToNull(_startupDirectory.text),
         environmentNotes: _emptyToNull(_notes.text),
         platform: _platform,
+        multiplexer: _multiplexer,
         favorite: _favorite,
         updatedAt: now,
       );
@@ -144,6 +151,7 @@ class _HostEditScreenState extends ConsumerState<HostEditScreen> {
       startupDirectory: _emptyToNull(_startupDirectory.text),
       environmentNotes: _emptyToNull(_notes.text),
       platform: _platform,
+      multiplexer: _multiplexer,
       favorite: _favorite,
       createdAt: now,
       updatedAt: now,
@@ -443,6 +451,25 @@ class _HostEditScreenState extends ConsumerState<HostEditScreen> {
               onChanged: (value) =>
                   setState(() => _platform = value ?? RemotePlatform.posix),
             ),
+            // Only POSIX hosts can run a multiplexer, so the choice is hidden
+            // rather than shown disabled on Windows (SPEC 30).
+            if (_platform.supportsMultiplexer) ...[
+              const SizedBox(height: 12),
+              DropdownButtonFormField<MultiplexerKind>(
+                initialValue: _multiplexer,
+                decoration: InputDecoration(
+                  labelText: l10n.computerFieldMultiplexer,
+                  helperText: l10n.computerFieldMultiplexerHelp,
+                  helperMaxLines: 3,
+                ),
+                items: [
+                  for (final kind in MultiplexerKind.values)
+                    DropdownMenuItem(value: kind, child: Text(kind.label)),
+                ],
+                onChanged: (value) =>
+                    setState(() => _multiplexer = value ?? MultiplexerKind.tmux),
+              ),
+            ],
             const SizedBox(height: 12),
             TextFormField(
               controller: _startupDirectory,

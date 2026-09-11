@@ -11,7 +11,7 @@ import 'package:relayshell/core/shell/session_launch.dart';
 import 'package:relayshell/core/ssh/connection_manager.dart';
 import 'package:relayshell/core/ssh/credential_resolver.dart';
 import 'package:relayshell/core/ssh/host_key_verifier.dart';
-import 'package:relayshell/core/ssh/tmux_service.dart';
+import 'package:relayshell/core/ssh/multiplexer_service.dart';
 import 'package:relayshell/core/storage/secret_store.dart';
 import 'package:relayshell/features/sessions/session_launcher.dart';
 import 'package:relayshell/features/terminal/terminal_manager.dart';
@@ -246,7 +246,7 @@ class _MatchingTerminalManager extends TerminalManager {
     required super.sessions,
     required this.match,
     this.openResult,
-  }) : super(tmux: const TmuxService());
+  }) : super(multiplexer: const MultiplexerService());
 
   final TerminalSession match;
   final TerminalSession? openResult;

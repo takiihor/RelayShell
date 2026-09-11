@@ -12,7 +12,7 @@ import 'package:relayshell/core/ssh/connection_manager.dart';
 import 'package:relayshell/core/ssh/credential_resolver.dart';
 import 'package:relayshell/core/ssh/host_key_verifier.dart';
 import 'package:relayshell/core/ssh/ssh_connection.dart';
-import 'package:relayshell/core/ssh/tmux_service.dart';
+import 'package:relayshell/core/ssh/multiplexer_service.dart';
 import 'package:relayshell/core/storage/secret_store.dart';
 import 'package:relayshell/features/terminal/terminal_manager.dart';
 import 'package:relayshell/shared/models/models.dart';
@@ -55,7 +55,7 @@ void main() {
     terminals = TerminalManager(
       connections: connections,
       sessions: SessionsRepository(database),
-      tmux: const TmuxService(),
+      multiplexer: const MultiplexerService(),
     );
     final now = DateTime.now();
     host = Host(

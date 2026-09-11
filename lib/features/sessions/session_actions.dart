@@ -113,6 +113,45 @@ Future<void> openProjectTerminal(
   });
 }
 
+/// Opens a project directly in Conversation Mode while preserving the project's
+/// configured working directory and persistent-session behavior.
+Future<void> openProjectConversation(
+  BuildContext context,
+  WidgetRef ref,
+  Project project, {
+  SessionMode? mode,
+}) async {
+  final host = await ref.read(hostsRepositoryProvider).byId(project.hostId);
+  if (host == null) {
+    if (context.mounted) {
+      showMessage(
+        context,
+        AppLocalizations.of(context).errorNoHosts,
+        isError: true,
+      );
+    }
+    return;
+  }
+
+  if (!context.mounted) return;
+  await _launch(
+    context,
+    ref,
+    () async {
+      final session = await ref
+          .read(sessionLauncherProvider)
+          .openProject(
+            project: project,
+            host: host,
+            preferences: ref.read(preferencesProvider),
+            mode: mode,
+          );
+      return session.id;
+    },
+    destination: Routes.conversation,
+  );
+}
+
 /// Resumes a saved session (SPEC 40.4).
 Future<void> resumeSessionRecord(
   BuildContext context,

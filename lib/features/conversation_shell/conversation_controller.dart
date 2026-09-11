@@ -62,7 +62,10 @@ class ConversationController extends ChangeNotifier {
   /// after staging, so the PTY's echo and continuation prompts are discarded
   /// instead of being mistaken for command output.
   void submit(String rawCommand) {
-    final command = rawCommand.trimRight();
+    // Preserve the user's shell text exactly. In particular, trailing spaces
+    // can be meaningful after a line-continuation backslash, so Conversation
+    // Mode must not silently trim or rewrite the command before execution.
+    final command = rawCommand;
     if (command.trim().isEmpty || !canSubmit) return;
 
     final id = '${_sequence++}';

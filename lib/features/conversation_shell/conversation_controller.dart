@@ -54,10 +54,10 @@ class ConversationController extends ChangeNotifier {
   /// SSH exec channel. `eval` is a shell special builtin, so state changes such
   /// as `cd`, `export` and environment activation remain in this PTY.
   ///
-  /// A quoted heredoc carries multi-line input without evaluating it while the
-  /// framing wrapper itself is being parsed. The delimiter contains the random
-  /// per-controller nonce and a monotonic id, making accidental collisions with
-  /// user input extremely unlikely.
+  /// A quoted heredoc stages multi-line input without evaluating it while the
+  /// framing wrapper itself is being parsed. The BEGIN marker is emitted only
+  /// after staging, so the PTY's echo and continuation prompts are discarded
+  /// instead of being mistaken for command output.
   void submit(String rawCommand) {
     final command = rawCommand.trimRight();
     if (command.trim().isEmpty || !canSubmit) return;
@@ -81,21 +81,23 @@ class ConversationController extends ChangeNotifier {
 
     final delimiter = '__RELAYSHELL_$token__';
     final wrapper = StringBuffer()
-      ..writeln("printf '\\036RELAYSHELL_BEGIN:$token\\037\\n'")
-      ..writeln('eval "\$(cat <<\'$delimiter\'')
+      ..writeln('__relayshell_cmd="\$(cat <<\'$delimiter\'')
       ..writeln(command)
       ..writeln(delimiter)
       ..writeln(')"')
+      ..writeln("printf '\\036RELAYSHELL_BEGIN:$token\\037\\n'")
+      ..writeln('eval "\$__relayshell_cmd"')
       ..writeln('__relayshell_status=$?')
       ..writeln(
         "printf '\\036RELAYSHELL_END:$token:%s\\037\\n' \"\$__relayshell_status\"",
-      );
+      )
+      ..writeln('unset __relayshell_cmd __relayshell_status');
 
     session.sendText(wrapper.toString(), submit: true);
   }
 
   /// Interrupts the foreground command while leaving the SSH transport and
-  /// shell session alive. The wrapper should subsequently emit exit status 130.
+  /// shell session alive. The wrapper should subsequently emit its exit status.
   void interrupt() {
     if (_activeId == null || !session.isLive) return;
     session.sendRaw('\x03');
@@ -127,7 +129,9 @@ class ConversationController extends ChangeNotifier {
       if (index < 0) {
         // Retain only enough tail to recognise a marker split across chunks.
         if (_buffer.length > begin.length + _markerTail) {
-          _buffer = _buffer.substring(_buffer.length - begin.length - _markerTail);
+          _buffer = _buffer.substring(
+            _buffer.length - begin.length - _markerTail,
+          );
         }
         return;
       }

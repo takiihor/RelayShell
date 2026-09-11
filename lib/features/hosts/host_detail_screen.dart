@@ -144,12 +144,31 @@ class _HostDetailView extends ConsumerWidget {
                       children: [
                         Expanded(
                           child: FilledButton.icon(
-                            onPressed: () =>
-                                openHostTerminal(context, ref, host),
-                            icon: const Icon(Icons.terminal, size: 18),
-                            label: Text(l10n.computerOpenTerminal),
+                            onPressed: () => host.platform.supportsMultiplexer
+                                ? openHostConversation(context, ref, host)
+                                : openHostTerminal(context, ref, host),
+                            icon: Icon(
+                              host.platform.supportsMultiplexer
+                                  ? Icons.chat_bubble_outline
+                                  : Icons.terminal,
+                              size: 18,
+                            ),
+                            label: Text(
+                              host.platform.supportsMultiplexer
+                                  ? l10n.computerRunCommand
+                                  : l10n.computerOpenTerminal,
+                            ),
                           ),
                         ),
+                        if (host.platform.supportsMultiplexer) ...[
+                          const SizedBox(width: 8),
+                          IconButton.outlined(
+                            onPressed: () =>
+                                openHostTerminal(context, ref, host),
+                            icon: const Icon(Icons.terminal),
+                            tooltip: l10n.computerOpenTerminal,
+                          ),
+                        ],
                         const SizedBox(width: 8),
                         IconButton.outlined(
                           onPressed: () => context.push(Routes.files(host.id)),

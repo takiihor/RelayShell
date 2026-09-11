@@ -32,6 +32,31 @@ Future<void> openHostTerminal(
   });
 }
 
+/// Opens the mobile-first Conversation Mode over the same persistent PTY that
+/// Terminal Mode uses. No LLM or command translation sits in this path.
+Future<void> openHostConversation(
+  BuildContext context,
+  WidgetRef ref,
+  Host host, {
+  SessionMode? mode,
+}) async {
+  await _launch(
+    context,
+    ref,
+    () async {
+      final session = await ref
+          .read(sessionLauncherProvider)
+          .openHostTerminal(
+            host: host,
+            preferences: ref.read(preferencesProvider),
+            mode: mode,
+          );
+      return session.id;
+    },
+    destination: Routes.conversation,
+  );
+}
+
 /// Opens an additional terminal instead of focusing the existing one.
 Future<void> openAdditionalHostTerminal(
   BuildContext context,
@@ -149,8 +174,9 @@ Future<void> attachTmuxSession(
 Future<void> _launch(
   BuildContext context,
   WidgetRef ref,
-  Future<String> Function() action,
-) async {
+  Future<String> Function() action, {
+  String destination = Routes.terminal,
+}) async {
   final navigator = Navigator.of(context, rootNavigator: true);
   var dialogOpen = true;
 
@@ -163,7 +189,7 @@ Future<void> _launch(
 
     if (!context.mounted) return;
     ref.read(terminalManagerProvider).setActive(sessionId);
-    context.push('${Routes.terminal}?session=$sessionId');
+    context.push('$destination?session=$sessionId');
   } on SshFailure catch (failure) {
     if (dialogOpen && navigator.canPop()) navigator.pop();
     dialogOpen = false;

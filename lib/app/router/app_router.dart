@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../features/commands/command_edit_screen.dart';
 import '../../features/commands/commands_screen.dart';
+import '../../features/conversation_shell/conversation_shell_screen.dart';
 import '../../features/files/files_screen.dart';
 import '../../features/forwarding/forwarding_screen.dart';
 import '../../features/home/home_screen.dart';
@@ -167,8 +168,15 @@ GoRouter createRouter({GlobalKey<NavigatorState>? navigatorKey}) {
         ],
       ),
 
-      // Full-screen routes that sit above the tab shell. The terminal in
-      // particular must be visually separated from app navigation (SPEC 39).
+      // Full-screen routes that sit above the tab shell. The command and
+      // terminal surfaces must remain visually separated from app navigation.
+      GoRoute(
+        parentNavigatorKey: rootKey,
+        path: Routes.conversation,
+        builder: (context, state) => ConversationShellScreen(
+          sessionId: state.uri.queryParameters['session'],
+        ),
+      ),
       GoRoute(
         parentNavigatorKey: rootKey,
         path: Routes.terminal,

@@ -40,7 +40,6 @@ class _ConversationShellScreenState
         : manager.byId(widget.sessionId!);
     _session = session;
     if (session == null) return;
-    manager.setActive(session.id);
     _conversation = ConversationController(session: session)
       ..addListener(_onConversationChanged);
   }

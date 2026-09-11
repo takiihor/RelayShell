@@ -37,13 +37,20 @@ class AppPreferences {
     this.clearClipboardAfterSecrets = true,
     this.clearClipboardSeconds = 45,
     this.tmuxSessionPrefix = 'rdc',
+    this.defaultMultiplexer = MultiplexerKind.tmux,
     this.locale,
   });
 
   /// SPEC 10.3: a default row plus a configurable second row.
+  ///
+  /// The second row carries the scrollback keys because a persistent session
+  /// runs in the alternate screen buffer, where dragging is the only way to
+  /// scroll and it only works if the remote program reports mouse input. A
+  /// visible SCRL key means the user is never stuck with an unscrollable
+  /// screen and no idea why.
   static const List<List<String>> defaultAccessoryRows = [
     ['esc', 'ctrl', 'alt', 'tab', 'up', 'left', 'down', 'right'],
-    ['pipe', 'tilde', 'slash', 'dash', 'underscore', 'colon', 'ctrl_c'],
+    ['wheel_up', 'wheel_down', 'pipe', 'tilde', 'slash', 'dash', 'ctrl_c'],
   ];
 
   final AppThemeMode themeMode;
@@ -74,6 +81,9 @@ class AppPreferences {
   final int clearClipboardSeconds;
 
   final String tmuxSessionPrefix;
+
+  /// Backend pre-selected when adding a computer. Per-host from then on.
+  final MultiplexerKind defaultMultiplexer;
 
   /// `null` means follow the device locale.
   final String? locale;
@@ -107,6 +117,7 @@ class AppPreferences {
     bool? clearClipboardAfterSecrets,
     int? clearClipboardSeconds,
     String? tmuxSessionPrefix,
+    MultiplexerKind? defaultMultiplexer,
     Object? locale = _unset,
   }) => AppPreferences(
     themeMode: themeMode ?? this.themeMode,
@@ -135,6 +146,7 @@ class AppPreferences {
         clearClipboardAfterSecrets ?? this.clearClipboardAfterSecrets,
     clearClipboardSeconds: clearClipboardSeconds ?? this.clearClipboardSeconds,
     tmuxSessionPrefix: tmuxSessionPrefix ?? this.tmuxSessionPrefix,
+    defaultMultiplexer: defaultMultiplexer ?? this.defaultMultiplexer,
     locale: locale == _unset ? this.locale : locale as String?,
   );
 
@@ -163,6 +175,7 @@ class AppPreferences {
     'clear_clipboard_after_secrets': clearClipboardAfterSecrets.toString(),
     'clear_clipboard_seconds': clearClipboardSeconds.toString(),
     'tmux_session_prefix': tmuxSessionPrefix,
+    'default_multiplexer': defaultMultiplexer.storageValue,
     'locale': ?locale,
   };
 
@@ -261,6 +274,9 @@ class AppPreferences {
       ),
       tmuxSessionPrefix:
           map['tmux_session_prefix'] ?? fallback.tmuxSessionPrefix,
+      defaultMultiplexer: MultiplexerKind.fromStorage(
+        map['default_multiplexer'],
+      ),
       locale: map['locale'],
     );
   }

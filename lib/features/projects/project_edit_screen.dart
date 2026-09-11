@@ -129,7 +129,7 @@ class _ProjectEditScreenState extends ConsumerState<ProjectEditScreen> {
     if (!_loaded) return const Scaffold(body: LoadingView());
 
     final selectedHost = hosts.where((host) => host.id == _hostId).firstOrNull;
-    final supportsTmux = selectedHost?.platform.supportsTmux ?? true;
+    final supportsMultiplexer = selectedHost?.platform.supportsMultiplexer ?? true;
 
     return Scaffold(
       appBar: AppBar(
@@ -160,7 +160,7 @@ class _ProjectEditScreenState extends ConsumerState<ProjectEditScreen> {
                 // A Windows host cannot host a tmux session, so a default that
                 // would silently downgrade is corrected here instead.
                 final host = hosts.where((h) => h.id == value).firstOrNull;
-                if (host != null && !host.platform.supportsTmux) {
+                if (host != null && !host.platform.supportsMultiplexer) {
                   _sessionMode = SessionMode.direct;
                 }
               }),
@@ -203,9 +203,13 @@ class _ProjectEditScreenState extends ConsumerState<ProjectEditScreen> {
                 ),
                 ButtonSegment(
                   value: SessionMode.persistent,
-                  label: Text(l10n.sessionModePersistent),
+                  label: Text(
+                    l10n.sessionModePersistentNamed(
+                      (selectedHost?.multiplexer ?? MultiplexerKind.tmux).label,
+                    ),
+                  ),
                   icon: const Icon(Icons.play_circle_outline, size: 18),
-                  enabled: supportsTmux,
+                  enabled: supportsMultiplexer,
                 ),
               ],
               selected: {_sessionMode},
@@ -221,10 +225,13 @@ class _ProjectEditScreenState extends ConsumerState<ProjectEditScreen> {
                 color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
-            if (!supportsTmux) ...[
+            if (!supportsMultiplexer) ...[
               const SizedBox(height: 6),
               Text(
-                l10n.sessionsTmuxMissingBody,
+                l10n.sessionsTmuxMissingBody(
+                  selectedHost?.multiplexer.label ??
+                      MultiplexerKind.tmux.label,
+                ),
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),

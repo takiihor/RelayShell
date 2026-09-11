@@ -133,9 +133,15 @@ class _ContinueCard extends ConsumerWidget {
     final theme = Theme.of(context);
     final host = ref.watch(hostProvider(session.hostId)).value;
 
+    // The record itself does not know which backend anchored it, so the name
+    // comes from the host. A Herdr session labelled "tmux" is worse than no
+    // label at all.
     final subtitleParts = <String>[
       if (host != null) host.name,
-      if (session.isPersistent) 'tmux' else 'shell',
+      if (session.isPersistent)
+        (host?.multiplexer ?? MultiplexerKind.tmux).storageValue
+      else
+        'shell',
     ];
 
     return Card(

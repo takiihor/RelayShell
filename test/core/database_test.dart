@@ -95,15 +95,43 @@ void main() {
   });
 
   group('migrations', () {
-    test('an upgrade from the current version is a no-op', () async {
-      // With no migrations registered yet, this proves the machinery runs
-      // cleanly; each future migration adds its own case here.
-      expect(schemaMigrations, isEmpty);
-
+    test('a fresh database lands on the current version', () async {
       final reopened = await openMemory();
       final result = await reopened.db.rawQuery('PRAGMA user_version');
       expect(result.first.values.first, schemaVersion);
       await reopened.close();
+    });
+
+    test('every registered migration is reachable and ordered', () {
+      // A gap or a repeat here would silently skip a migration on upgrade.
+      final versions = schemaMigrations.map((m) => m.version).toList();
+      expect(versions, List.generate(versions.length, (i) => i + 2));
+      expect(schemaMigrations.last.version, schemaVersion);
+    });
+
+    test('v2 gives every host a multiplexer defaulting to tmux', () async {
+      // Replayed over a fresh database too, so a new install and an upgraded
+      // one are the same shape -- which is why the column is absent from
+      // createSchemaStatements.
+      final columns = await database.db.rawQuery('PRAGMA table_info(hosts)');
+      final multiplexer = columns.firstWhere(
+        (column) => column['name'] == 'multiplexer',
+      );
+      expect(multiplexer['dflt_value'], "'tmux'");
+
+      // A host saved before the column existed still reads back as tmux.
+      await database.db.insert('hosts', {
+        'id': 'legacy',
+        'name': 'Legacy',
+        'hostname': '10.0.0.9',
+        'port': 22,
+        'username': 'dev',
+        'auth_method': 'private_key',
+        'created_at': 0,
+        'updated_at': 0,
+      });
+      final loaded = await HostsRepository(database).byId('legacy');
+      expect(loaded!.multiplexer, MultiplexerKind.tmux);
     });
   });
 

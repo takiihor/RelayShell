@@ -1,39 +1,6 @@
-import 'package:flutter/foundation.dart';
-
+import 'multiplexer.dart';
+import 'multiplexer_session.dart';
 import 'shell_quoting.dart';
-
-/// A tmux session as reported by the remote machine (SPEC 11.4).
-@immutable
-class TmuxSession {
-  const TmuxSession({
-    required this.name,
-    required this.windows,
-    required this.attached,
-    this.created,
-  });
-
-  final String name;
-  final int windows;
-  final bool attached;
-  final DateTime? created;
-
-  /// True when this session was created by the app under [prefix].
-  bool isManagedBy(String prefix) => name.startsWith('$prefix-');
-
-  @override
-  bool operator ==(Object other) => other is TmuxSession && other.name == name;
-
-  @override
-  int get hashCode => name.hashCode;
-}
-
-/// Raised when tmux is not available on the remote machine.
-class TmuxUnavailableException implements Exception {
-  const TmuxUnavailableException();
-
-  @override
-  String toString() => 'tmux is not installed on this computer.';
-}
 
 /// Builds and parses the tmux commands the app issues (SPEC 11).
 ///
@@ -98,14 +65,33 @@ class TmuxCommandBuilder {
 
   /// Command that reports whether tmux exists, printing its version.
   String detect() =>
-      'command -v tmux >/dev/null 2>&1 && tmux -V || echo __NO_TMUX__';
+      'command -v tmux >/dev/null 2>&1 && tmux -V || '
+      'echo ${Multiplexer.missingSentinel}';
+
+  /// Server options applied before attaching, as a `;`-separated prelude.
+  ///
+  /// `mouse on` is what makes the terminal scrollable from a phone. Without it
+  /// tmux leaves the emulator in the alternate screen buffer with no mouse
+  /// reporting, and a touch drag produces nothing at all: the alternate buffer
+  /// has no scrollback of its own, and tmux never sees the gesture. With it,
+  /// the drag arrives as wheel events and tmux scrolls its own history.
+  ///
+  /// `history-limit` is raised because tmux's 2000-line default, not the app's
+  /// scrollback preference, is what actually bounds a persistent session.
+  ///
+  /// Set with `-g` on the server, and tolerant of failure (`|| true`) so an
+  /// unusual tmux build cannot stop the user attaching to their work.
+  static const String sessionSetup =
+      'tmux set -g mouse on >/dev/null 2>&1 || true; '
+      'tmux set -g history-limit 50000 >/dev/null 2>&1 || true; ';
 
   /// Attaches to [name], creating it in [workingDirectory] if absent.
   ///
   /// `new-session -A` is a single atomic "attach or create", which avoids the
   /// race where two phones both see "no session" and each create one.
   String attachOrCreate(String name, {String? workingDirectory}) {
-    final buffer = StringBuffer('tmux new-session -A -s ${quoter.quote(name)}');
+    final buffer = StringBuffer(sessionSetup);
+    buffer.write('tmux new-session -A -s ${quoter.quote(name)}');
     if (workingDirectory != null && workingDirectory.isNotEmpty) {
       buffer.write(' -c ${quoter.quote(workingDirectory)}');
     }
@@ -121,7 +107,8 @@ class TmuxCommandBuilder {
     String command, {
     String? workingDirectory,
   }) {
-    final buffer = StringBuffer('tmux new-session -A -s ${quoter.quote(name)}');
+    final buffer = StringBuffer(sessionSetup);
+    buffer.write('tmux new-session -A -s ${quoter.quote(name)}');
     if (workingDirectory != null && workingDirectory.isNotEmpty) {
       buffer.write(' -c ${quoter.quote(workingDirectory)}');
     }
@@ -145,8 +132,8 @@ class TmuxCommandBuilder {
   ///
   /// Unparseable lines are skipped rather than throwing: a single odd line from
   /// an unusual tmux build should not hide every other session.
-  List<TmuxSession> parseSessions(String output) {
-    final sessions = <TmuxSession>[];
+  List<MultiplexerSession> parseSessions(String output) {
+    final sessions = <MultiplexerSession>[];
     for (final rawLine in output.split('\n')) {
       final line = rawLine.trim();
       if (line.isEmpty) continue;
@@ -158,7 +145,7 @@ class TmuxCommandBuilder {
           ? int.tryParse(fields[3].trim())
           : null;
       sessions.add(
-        TmuxSession(
+        MultiplexerSession(
           name: name,
           windows: int.tryParse(fields[1].trim()) ?? 1,
           attached: (int.tryParse(fields[2].trim()) ?? 0) > 0,

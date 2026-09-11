@@ -91,9 +91,18 @@ A changed fingerprint blocks the connection with no override in the flow.
 app builds goes through `ShellQuoter`; a user's saved command is intentional shell
 input and is sent as written (SPEC 29).
 
-**tmux is a product feature, not a hidden trick.** Persistent sessions exec
-`tmux new-session -A`, a single atomic attach-or-create, so the channel *is* the
-tmux client and reconnect lands back in the same work.
+**The multiplexer is a product feature, not a hidden trick.** Persistent
+sessions exec a single atomic attach-or-create — `tmux new-session -A` or
+`herdr --session` — so the channel *is* the multiplexer client and reconnect
+lands back in the same work. The backend is chosen per host, because it depends
+on what is installed there; `core/shell/multiplexer.dart` holds the seam.
+
+**A persistent session must be scrollable.** A multiplexer puts the emulator in
+the alternate screen buffer, which has no scrollback, so a touch drag can only
+scroll by reaching the remote program as a mouse-wheel event. Herdr captures the
+mouse by default; tmux does not, so the app sets `mouse on` when it attaches.
+Without that the drag does nothing at all — not even xterm.dart's arrow-key
+fallback. `test/features/terminal_scroll_test.dart` pins both halves.
 
 ## Testing
 

@@ -1069,8 +1069,14 @@ abstract class AppLocalizations {
   /// No description provided for @sessionModePersistent.
   ///
   /// In en, this message translates to:
-  /// **'Persistent (tmux)'**
+  /// **'Persistent'**
   String get sessionModePersistent;
+
+  /// No description provided for @sessionModePersistentNamed.
+  ///
+  /// In en, this message translates to:
+  /// **'Persistent ({name})'**
+  String sessionModePersistentNamed(String name);
 
   /// No description provided for @sessionModeDirectHelp.
   ///
@@ -1207,14 +1213,14 @@ abstract class AppLocalizations {
   /// No description provided for @sessionsTmuxMissingTitle.
   ///
   /// In en, this message translates to:
-  /// **'tmux is not installed'**
-  String get sessionsTmuxMissingTitle;
+  /// **'{name} is not installed'**
+  String sessionsTmuxMissingTitle(String name);
 
   /// No description provided for @sessionsTmuxMissingBody.
   ///
   /// In en, this message translates to:
-  /// **'Persistent sessions need tmux on the computer. Install it there, or use a direct terminal.'**
-  String get sessionsTmuxMissingBody;
+  /// **'Persistent sessions need {name} on the computer. Install it there, choose a different multiplexer for this computer, or use a direct terminal.'**
+  String sessionsTmuxMissingBody(String name);
 
   /// No description provided for @sessionsUseDirect.
   ///
@@ -2521,6 +2527,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Maximum retries'**
   String get settingsMaxReconnects;
+
+  /// No description provided for @computerFieldMultiplexer.
+  ///
+  /// In en, this message translates to:
+  /// **'Persistent sessions'**
+  String get computerFieldMultiplexer;
+
+  /// No description provided for @computerFieldMultiplexerHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Which terminal multiplexer anchors this computer\'s persistent sessions. It must already be installed there.'**
+  String get computerFieldMultiplexerHelp;
+
+  /// No description provided for @multiplexerTmux.
+  ///
+  /// In en, this message translates to:
+  /// **'tmux'**
+  String get multiplexerTmux;
+
+  /// No description provided for @multiplexerHerdr.
+  ///
+  /// In en, this message translates to:
+  /// **'Herdr'**
+  String get multiplexerHerdr;
+
+  /// No description provided for @multiplexerHerdrHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Built for coding agents. Captures the mouse, so the terminal scrolls by dragging.'**
+  String get multiplexerHerdrHelp;
+
+  /// No description provided for @multiplexerTmuxHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Available on almost every machine. RelayShell turns on mouse mode so the terminal scrolls.'**
+  String get multiplexerTmuxHelp;
+
+  /// No description provided for @settingsDefaultMultiplexer.
+  ///
+  /// In en, this message translates to:
+  /// **'Default for new computers'**
+  String get settingsDefaultMultiplexer;
+
+  /// No description provided for @multiplexerUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} is not installed on this computer.'**
+  String multiplexerUnavailable(String name);
+
+  /// No description provided for @multiplexerCannotRename.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} cannot rename a running session.'**
+  String multiplexerCannotRename(String name);
+
+  /// No description provided for @terminalDetach.
+  ///
+  /// In en, this message translates to:
+  /// **'Detach, leave running'**
+  String get terminalDetach;
 
   /// No description provided for @settingsTmuxPrefix.
   ///

@@ -127,6 +127,30 @@ class AccessoryKeys {
       sequence: '\x05',
       width: 1.2,
     ),
+    // Scrollback keys for a full-screen program. A multiplexer puts the
+    // emulator in the alternate screen buffer, which has no scrollback of its
+    // own, so a touch drag can only scroll by arriving as a wheel event. These
+    // send one explicitly, for when the drag does not land or mouse reporting
+    // is off. SGR encoding: button 64 is wheel-up, 65 wheel-down, at cell 1,1.
+    'wheel_up': AccessoryKey(
+      id: 'wheel_up',
+      label: 'SCRL↑',
+      sequence: '\x1b[<64;1;1M',
+      width: 1.4,
+    ),
+    'wheel_down': AccessoryKey(
+      id: 'wheel_down',
+      label: 'SCRL↓',
+      sequence: '\x1b[<65;1;1M',
+      width: 1.4,
+    ),
+    // tmux copy-mode and Herdr detach both hang off the shared Ctrl+B prefix.
+    'copy_mode': AccessoryKey(
+      id: 'copy_mode',
+      label: 'COPY',
+      sequence: '\x02[',
+      width: 1.4,
+    ),
   };
 
   /// Keys the settings screen offers, in a stable, groupable order.

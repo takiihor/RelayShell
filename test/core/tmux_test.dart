@@ -1,4 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:relayshell/core/shell/multiplexer.dart';
+import 'package:relayshell/core/shell/multiplexer_session.dart';
 import 'package:relayshell/core/shell/tmux.dart';
 
 void main() {
@@ -158,21 +160,40 @@ void main() {
     test('attach-or-create is a single atomic command', () {
       expect(
         builder.attachOrCreate('rdc-api'),
-        'tmux new-session -A -s rdc-api',
+        endsWith('tmux new-session -A -s rdc-api'),
       );
+    });
+
+    test('enables mouse mode and raises history before attaching', () {
+      // Without `mouse on`, tmux puts the emulator in the alternate screen
+      // buffer with no mouse reporting, and a phone's touch drag produces
+      // nothing at all -- the session is unscrollable.
+      final command = builder.attachOrCreate('rdc-api');
+      expect(command, startsWith(TmuxCommandBuilder.sessionSetup));
+      expect(command, contains('set -g mouse on'));
+      expect(command, contains('set -g history-limit'));
+    });
+
+    test('setup failures cannot block attaching', () {
+      // An unusual tmux build that rejects an option must not cost the user
+      // access to their work.
+      for (final option in TmuxCommandBuilder.sessionSetup.split(';')) {
+        if (option.trim().isEmpty) continue;
+        expect(option, contains('|| true'));
+      }
     });
 
     test('quotes the working directory', () {
       expect(
         builder.attachOrCreate('rdc-api', workingDirectory: '/srv/my app'),
-        "tmux new-session -A -s rdc-api -c '/srv/my app'",
+        endsWith("tmux new-session -A -s rdc-api -c '/srv/my app'"),
       );
     });
 
     test('quotes a command run inside the session', () {
       expect(
         builder.attachOrCreateRunning('rdc-api', 'npm run dev'),
-        "tmux new-session -A -s rdc-api 'npm run dev'",
+        endsWith("tmux new-session -A -s rdc-api 'npm run dev'"),
       );
     });
 
@@ -193,14 +214,14 @@ void main() {
     });
 
     test('detect prints a marker when tmux is absent', () {
-      expect(builder.detect(), contains('__NO_TMUX__'));
+      expect(builder.detect(), contains(Multiplexer.missingSentinel));
     });
   });
 
-  group('TmuxSession', () {
+  group('MultiplexerSession', () {
     test('recognises sessions this app manages', () {
-      const managed = TmuxSession(name: 'rdc-api', windows: 1, attached: false);
-      const foreign = TmuxSession(
+      const managed = MultiplexerSession(name: 'rdc-api', windows: 1, attached: false);
+      const foreign = MultiplexerSession(
         name: 'my-own-session',
         windows: 1,
         attached: false,
@@ -211,7 +232,7 @@ void main() {
     });
 
     test('does not treat a prefix substring as managed', () {
-      const other = TmuxSession(name: 'rdcextra', windows: 1, attached: false);
+      const other = MultiplexerSession(name: 'rdcextra', windows: 1, attached: false);
       expect(other.isManagedBy('rdc'), isFalse);
     });
   });

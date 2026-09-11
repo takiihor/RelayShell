@@ -6,7 +6,7 @@
 library;
 
 /// Current schema version. Increment when adding a [schemaMigrations] entry.
-const int schemaVersion = 1;
+const int schemaVersion = 2;
 
 /// One forward migration step.
 class SchemaMigration {
@@ -19,7 +19,11 @@ class SchemaMigration {
   final List<String> statements;
 }
 
-/// Statements that create the schema from empty.
+/// Statements that create the version 1 schema from empty.
+///
+/// Deliberately frozen at version 1: [AppDatabase] replays every migration over
+/// a fresh database too, so a new install and an upgraded one are provably the
+/// same shape. Adding a column here as well would apply it twice.
 ///
 /// `credentials` intentionally has no column for secret material: private
 /// keys, passwords and passphrases live only in platform secure storage and are
@@ -181,6 +185,14 @@ const List<String> createSchemaStatements = [
 
 /// Forward migrations beyond version 1.
 ///
-/// Empty at version 1; every future schema change appends one entry here and
-/// bumps [schemaVersion].
-const List<SchemaMigration> schemaMigrations = [];
+/// Every schema change appends one entry here and bumps [schemaVersion].
+const List<SchemaMigration> schemaMigrations = [
+  // v2: hosts choose their persistent-session backend. Existing rows default to
+  // tmux, which is what they were using before the column existed.
+  SchemaMigration(
+    version: 2,
+    statements: [
+      "ALTER TABLE hosts ADD COLUMN multiplexer TEXT NOT NULL DEFAULT 'tmux'",
+    ],
+  ),
+];

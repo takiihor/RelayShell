@@ -182,7 +182,11 @@ class SettingsScreen extends ConsumerWidget {
                 ),
                 DropdownMenuItem(
                   value: SessionMode.persistent,
-                  child: Text(l10n.sessionModePersistent),
+                  child: Text(
+                    l10n.sessionModePersistentNamed(
+                      preferences.defaultMultiplexer.label,
+                    ),
+                  ),
                 ),
               ],
               onChanged: (value) => value == null
@@ -269,6 +273,28 @@ class SettingsScreen extends ConsumerWidget {
                   : controller.edit(
                       (c) => c.copyWith(reconnectBehavior: value),
                     ),
+            ),
+          ),
+          ListTile(
+            title: Text(l10n.settingsDefaultMultiplexer),
+            subtitle: Text(
+              preferences.defaultMultiplexer == MultiplexerKind.herdr
+                  ? l10n.multiplexerHerdrHelp
+                  : l10n.multiplexerTmuxHelp,
+            ),
+            isThreeLine: true,
+            trailing: DropdownButton<MultiplexerKind>(
+              value: preferences.defaultMultiplexer,
+              items: [
+                for (final kind in MultiplexerKind.values)
+                  DropdownMenuItem(value: kind, child: Text(kind.label)),
+              ],
+              onChanged: (value) {
+                if (value == null) return;
+                ref
+                    .read(preferencesProvider.notifier)
+                    .edit((c) => c.copyWith(defaultMultiplexer: value));
+              },
             ),
           ),
           ListTile(

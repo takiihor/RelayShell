@@ -36,7 +36,8 @@ enum CredentialType {
 /// Shell family assumed for a remote machine.
 ///
 /// This drives command quoting (SPEC 29) and the availability of POSIX-only
-/// features such as tmux (SPEC 30). Windows is split by shell because cmd.exe
+/// features such as a terminal multiplexer (SPEC 30). Windows is split by shell
+/// because cmd.exe
 /// and PowerShell quote arguments incompatibly, and getting that wrong is how
 /// a path with a space silently becomes two arguments.
 enum RemotePlatform {
@@ -48,7 +49,8 @@ enum RemotePlatform {
   final String storageValue;
   final String label;
 
-  bool get supportsTmux => this == RemotePlatform.posix;
+  /// Terminal multiplexers the app supports are POSIX-only.
+  bool get supportsMultiplexer => this == RemotePlatform.posix;
 
   bool get isWindows => this != RemotePlatform.posix;
 
@@ -63,12 +65,34 @@ enum RemotePlatform {
   }
 }
 
+/// Terminal multiplexer used to anchor persistent sessions on a remote machine.
+///
+/// The choice is per-host because it depends on what is installed there, and it
+/// is the user's workflow rather than an implementation detail: tmux is on
+/// nearly every machine, while Herdr is built around coding agents and captures
+/// the mouse by default, which is what makes a phone terminal scrollable.
+enum MultiplexerKind {
+  tmux('tmux', 'tmux'),
+  herdr('herdr', 'Herdr');
+
+  const MultiplexerKind(this.storageValue, this.label);
+  final String storageValue;
+  final String label;
+
+  static MultiplexerKind fromStorage(String? value) =>
+      MultiplexerKind.values.firstWhere(
+        (e) => e.storageValue == value,
+        orElse: () => MultiplexerKind.tmux,
+      );
+}
+
 /// How a terminal session is anchored on the remote machine (SPEC 11.1).
 enum SessionMode {
   /// Plain SSH shell. Dies with the connection.
   direct('direct'),
 
-  /// SSH shell attached to a managed tmux session. Survives disconnection.
+  /// SSH shell attached to a managed multiplexer session. Survives
+  /// disconnection.
   persistent('persistent');
 
   const SessionMode(this.storageValue);

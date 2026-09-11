@@ -31,6 +31,15 @@ abstract class ShellQuoter {
   /// Sequences commands so the second runs only if the first succeeded.
   String andThen(String first, String second);
 
+  /// Wraps [command] so it runs with the user's login environment.
+  ///
+  /// An SSH `exec` channel is neither interactive nor a login shell, so it gets
+  /// a bare system PATH: `~/.local/bin` and friends are missing, and a tool
+  /// installed there is simply "command not found". Anything in `/usr/bin`
+  /// (tmux) works without this; anything a user installed themselves (Herdr,
+  /// mise/asdf shims, a Homebrew prefix) does not.
+  String loginShell(String command);
+
   /// Rejects values no quoting scheme can carry through a command line.
   void rejectUnquotable(String value) {
     if (value.contains('\u0000')) {
@@ -78,6 +87,16 @@ class PosixShellQuoter extends ShellQuoter {
 
   @override
   String andThen(String first, String second) => '$first && $second';
+
+  /// `$SHELL -l -c '<command>'`, falling back to `sh` when SHELL is unset.
+  ///
+  /// The outer `exec` replaces the channel's shell with the login shell, so the
+  /// SSH channel talks to it directly rather than through an extra process.
+  /// [command] itself is *not* exec'd: it may be a compound statement, and
+  /// `exec` accepts only a single simple command.
+  @override
+  String loginShell(String command) =>
+      r'exec "${SHELL:-/bin/sh}" -l -c ' '${quote(command)}';
 }
 
 /// PowerShell quoting.
@@ -100,6 +119,11 @@ class PowerShellQuoter extends ShellQuoter {
 
   @override
   String andThen(String first, String second) => '$first; if (\$?) { $second }';
+
+  /// PowerShell reads the user's profile for a non-interactive command anyway,
+  /// so there is no login-shell gap to close here.
+  @override
+  String loginShell(String command) => command;
 }
 
 /// cmd.exe quoting.
@@ -134,4 +158,8 @@ class WindowsCmdQuoter extends ShellQuoter {
 
   @override
   String andThen(String first, String second) => '$first && $second';
+
+  /// cmd.exe has no login-shell concept; the command runs as written.
+  @override
+  String loginShell(String command) => command;
 }

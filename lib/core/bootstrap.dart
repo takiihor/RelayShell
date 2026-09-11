@@ -22,7 +22,7 @@ import 'ssh/credential_resolver.dart';
 import 'ssh/forwarding_service.dart';
 import 'ssh/host_key_verifier.dart';
 import 'ssh/sftp_service.dart';
-import 'ssh/tmux_service.dart';
+import 'ssh/multiplexer_service.dart';
 import 'storage/config_transfer.dart';
 import 'storage/secret_store.dart';
 
@@ -53,7 +53,7 @@ class AppServices {
     required this.connections,
     required this.forwarding,
     required this.sftp,
-    required this.tmux,
+    required this.multiplexer,
     required this.configTransfer,
     required this.wakeLock,
     required this.clipboard,
@@ -83,7 +83,7 @@ class AppServices {
   final ConnectionManager connections;
   final ForwardingService forwarding;
   final SftpService sftp;
-  final TmuxService tmux;
+  final MultiplexerService multiplexer;
 
   final ConfigTransfer configTransfer;
 
@@ -172,7 +172,7 @@ class AppServices {
       connections: connections,
       forwarding: ForwardingService(),
       sftp: const SftpService(),
-      tmux: const TmuxService(),
+      multiplexer: const MultiplexerService(),
       configTransfer: ConfigTransfer(
         hosts: hosts,
         projects: projects,

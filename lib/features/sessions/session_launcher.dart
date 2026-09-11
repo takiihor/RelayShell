@@ -8,7 +8,7 @@ import '../../core/shell/command_variables.dart';
 import '../../core/shell/danger_analysis.dart';
 import '../../core/shell/session_launch.dart';
 import '../../core/shell/shell_quoting.dart';
-import '../../core/shell/tmux.dart';
+import '../../core/shell/multiplexer_session.dart';
 import '../../core/ssh/connection_manager.dart';
 import '../../core/ssh/ssh_connection.dart';
 import '../../core/ssh/ssh_failure.dart';
@@ -113,6 +113,7 @@ class SessionLauncher {
       SessionLaunchBuilder(
         platform: host.platform,
         prefix: preferences.tmuxSessionPrefix,
+        multiplexer: host.multiplexer,
       );
 
   /// Opens a plain terminal on [host] (SPEC 8.5 "Open Terminal").
@@ -276,7 +277,7 @@ class SessionLauncher {
     final builder = _builderFor(host, preferences);
 
     final SessionLaunchPlan plan;
-    if (record.isPersistent && host.platform.supportsTmux) {
+    if (record.isPersistent && host.platform.supportsMultiplexer) {
       plan = builder.resumeSession(tmuxName!);
     } else {
       plan = record.launchCommand == null
@@ -315,7 +316,7 @@ class SessionLauncher {
   /// locally (SPEC 11.3 "Attach").
   Future<TerminalSession> attachTmuxSession({
     required Host host,
-    required TmuxSession session,
+    required MultiplexerSession session,
     required AppPreferences preferences,
   }) async {
     final open = terminals.findAttached(
@@ -463,6 +464,7 @@ class SessionLauncher {
       final builder = SessionLaunchBuilder(
         platform: prepared.host.platform,
         prefix: 'rdc',
+        multiplexer: prepared.host.multiplexer,
       );
 
       final String remoteCommand;
@@ -516,7 +518,7 @@ class SessionLauncher {
     required SessionMode requested,
     required Host host,
   }) {
-    if (requested == SessionMode.persistent && !host.platform.supportsTmux) {
+    if (requested == SessionMode.persistent && !host.platform.supportsMultiplexer) {
       return SessionMode.direct;
     }
     return requested;

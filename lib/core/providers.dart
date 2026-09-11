@@ -19,7 +19,7 @@ import 'ssh/connection_manager.dart';
 import 'ssh/forwarding_service.dart';
 import 'ssh/sftp_service.dart';
 import 'ssh/ssh_connection.dart';
-import 'ssh/tmux_service.dart';
+import 'ssh/multiplexer_service.dart';
 import 'storage/config_transfer.dart';
 import 'storage/secret_store.dart';
 import '../shared/models/models.dart';
@@ -102,8 +102,8 @@ final sftpServiceProvider = Provider<SftpService>(
   (ref) => ref.watch(appServicesProvider).sftp,
 );
 
-final tmuxServiceProvider = Provider<TmuxService>(
-  (ref) => ref.watch(appServicesProvider).tmux,
+final multiplexerServiceProvider = Provider<MultiplexerService>(
+  (ref) => ref.watch(appServicesProvider).multiplexer,
 );
 
 final configTransferProvider = Provider<ConfigTransfer>(

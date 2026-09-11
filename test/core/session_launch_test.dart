@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:relayshell/core/shell/session_launch.dart';
-import 'package:relayshell/core/shell/tmux.dart';
+import 'package:relayshell/core/shell/multiplexer_session.dart';
 import 'package:relayshell/shared/models/enums.dart';
 
 void main() {
@@ -70,8 +70,9 @@ void main() {
       final plan = posix.persistentSession(sessionName: 'rdc-api');
       expect(plan.mode, SessionMode.persistent);
       expect(plan.usesExec, isTrue);
-      expect(plan.shellCommand, 'tmux new-session -A -s rdc-api');
+      expect(plan.shellCommand, endsWith('tmux new-session -A -s rdc-api'));
       expect(plan.tmuxSessionName, 'rdc-api');
+      expect(plan.multiplexer, MultiplexerKind.tmux);
     });
 
     test('quotes the working directory', () {
@@ -95,7 +96,8 @@ void main() {
         sessionName: 'rdc-api',
         command: '   ',
       );
-      expect(plan.shellCommand, 'tmux new-session -A -s rdc-api');
+      expect(plan.shellCommand, endsWith('tmux new-session -A -s rdc-api'));
+      expect(plan.initialInput, isNull);
     });
 
     test('refuses on a platform without tmux', () {
@@ -103,7 +105,7 @@ void main() {
       // rather than a useful one, so this fails loudly instead (SPEC 30).
       expect(
         () => powerShell.persistentSession(sessionName: 'rdc-api'),
-        throwsA(isA<TmuxUnavailableException>()),
+        throwsA(isA<MultiplexerUnavailableException>()),
       );
     });
   });
@@ -111,14 +113,14 @@ void main() {
   group('resumeSession', () {
     test('reattaches without creating a duplicate', () {
       final plan = posix.resumeSession('rdc-api');
-      expect(plan.shellCommand, 'tmux new-session -A -s rdc-api');
+      expect(plan.shellCommand, endsWith('tmux new-session -A -s rdc-api'));
       expect(plan.mode, SessionMode.persistent);
     });
 
     test('refuses on a platform without tmux', () {
       expect(
         () => powerShell.resumeSession('rdc-api'),
-        throwsA(isA<TmuxUnavailableException>()),
+        throwsA(isA<MultiplexerUnavailableException>()),
       );
     });
   });

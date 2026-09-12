@@ -36,9 +36,10 @@ class ConversationCommandFramer {
     required String command,
   }) {
     final token = '$nonce-$id';
-    final delimiter = '__RELAYSHELL_$token__';
-    final begin = '$recordSeparatorRELAYSHELL_BEGIN:$token$unitSeparator';
-    final endPrefix = '$recordSeparatorRELAYSHELL_END:$token:';
+    final delimiter = '__RELAYSHELL_${token}__';
+    final begin =
+        '${recordSeparator}RELAYSHELL_BEGIN:${token}${unitSeparator}';
+    final endPrefix = '${recordSeparator}RELAYSHELL_END:${token}:';
 
     // The command body is staged first so its text cannot be confused with
     // output. More importantly, eval + footer are one compound shell command
@@ -51,11 +52,11 @@ class ConversationCommandFramer {
       ..writeln(delimiter)
       ..writeln(')"')
       ..write('{ ')
-      ..write("printf '\\036RELAYSHELL_BEGIN:$token\\037\\n'; ")
+      ..write("printf '\\036RELAYSHELL_BEGIN:${token}\\037\\n'; ")
       ..write('eval "\$__relayshell_cmd"; ')
       ..write('__relayshell_status=\$?; ')
       ..write(
-        "printf '\\036RELAYSHELL_END:$token:%s\\037\\n' \"\$__relayshell_status\"; ",
+        "printf '\\036RELAYSHELL_END:${token}:%s\\037\\n' \"\$__relayshell_status\"; ",
       )
       ..writeln('unset __relayshell_cmd __relayshell_status; }');
 

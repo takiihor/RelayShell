@@ -60,4 +60,37 @@ void main() {
     expect(modifiers.control, ModifierState.locked);
     expect(find.byIcon(Icons.lock), findsOneWidget);
   });
+
+  testWidgets('SHIFT arms visibly and modifies the next accessory key', (
+    tester,
+  ) async {
+    final modifiers = TerminalInputModifiers();
+    addTearDown(modifiers.dispose);
+    final output = <String>[];
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: AccessoryKeyboard(
+            rows: const [
+              ['shift', 'slash'],
+            ],
+            haptics: false,
+            modifiers: modifiers,
+            onSequence: output.add,
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('SHIFT'));
+    await tester.pump();
+    expect(modifiers.shift, ModifierState.armed);
+
+    await tester.tap(find.text('/'));
+    await tester.pump();
+
+    expect(output, ['?']);
+    expect(modifiers.shift, ModifierState.off);
+  });
 }

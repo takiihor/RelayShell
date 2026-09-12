@@ -178,6 +178,7 @@ class AccessoryKeyboard extends StatefulWidget {
     required this.modifiers,
     super.key,
     this.haptics = true,
+    this.safeAreaBottom = true,
   });
 
   final List<List<String>> rows;
@@ -188,6 +189,11 @@ class AccessoryKeyboard extends StatefulWidget {
   final TerminalInputModifiers modifiers;
 
   final bool haptics;
+
+  /// Terminal Mode sits at the bottom edge and needs the system inset. A
+  /// Conversation accessory row sits above its composer, whose SafeArea already
+  /// owns that inset, so it disables this to avoid a visible double gap.
+  final bool safeAreaBottom;
 
   @override
   State<AccessoryKeyboard> createState() => _AccessoryKeyboardState();
@@ -270,6 +276,7 @@ class _AccessoryKeyboardState extends State<AccessoryKeyboard> {
       ),
       child: SafeArea(
         top: false,
+        bottom: widget.safeAreaBottom,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [

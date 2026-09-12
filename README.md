@@ -7,9 +7,10 @@ client opens a blank terminal; this app opens what you actually wanted to do —
 resume a session, enter a project, launch a CLI, run a saved command, browse files.
 
 Conversation Mode is being developed as a mobile-first command/output view over the
-same SSH PTY used by Terminal Mode. It is not an AI chatbot: commands go directly to
-the remote shell, interactive tools such as Herdr can receive stdin and terminal
-control keys, and normal operation consumes no LLM tokens. See [design.md](design.md).
+same SSH/PTTY infrastructure used by Terminal Mode. It is not an AI chatbot: commands
+go directly to a clean remote shell, interactive tools such as Herdr can receive
+human stdin and real terminal control keys, and normal operation consumes no LLM
+tokens. See [design.md](design.md).
 
 ## Status
 
@@ -101,6 +102,9 @@ sessions exec a single atomic attach-or-create — `tmux new-session -A` or
 `herdr --session` — so the channel *is* the multiplexer client and reconnect
 lands back in the same work. The backend is chosen per host, because it depends
 on what is installed there; `core/shell/multiplexer.dart` holds the seam.
+Conversation Mode deliberately starts from a clean direct shell even on a Herdr
+host so its framing protocol can never be injected into an existing TUI. Herdr
+can then be launched as an interactive foreground process inside that shell.
 
 **A persistent session must be scrollable.** A multiplexer puts the emulator in
 the alternate screen buffer, which has no scrollback, so a touch drag can only
@@ -120,6 +124,9 @@ The suite favours checking real properties over restating the implementation:
 - **Shell quoting** round-trips 22 hostile inputs (`$(whoami)`, `'; rm -rf /`,
   globs, CJK) through the actual `/bin/sh` and asserts each comes back byte-identical
   as a single argument.
+- **Conversation framing** starts a real `/bin/sh` and verifies persistent shell
+  state plus the interactive-stdin invariant: a waiting child must receive later
+  user input, never RelayShell's own END/status footer.
 - **Key generation** is verified by `ssh-keygen -y`, which must derive the same
   public key and fingerprint from a key this app produced.
 - **Security gates** in `security_acceptance_test.dart` encode SPEC 44 as
@@ -128,13 +135,16 @@ The suite favours checking real properties over restating the implementation:
 - **Widget tests** run against the real service graph (real repositories, router
   and screens) on an in-memory database.
 
+Pull requests run `flutter analyze` and `flutter test` through `.github/workflows/flutter-ci.yml`.
+
 ## Release gates
 
 Automated checks cannot prove OS prompts, device keyboards, or real SSH server
 interoperability. Follow [the release checklist](docs/RELEASE_CHECKLIST.md) on
 physical Android and iOS devices before publishing. The checklist includes the
-computers, projects, sessions, reconnection, tmux, biometric, file transfer,
-and accessibility paths that need a human/device pass.
+computers, projects, Conversation Mode, Herdr/coding-agent input, sessions,
+reconnection, tmux, biometric, file transfer, and accessibility paths that need
+a human/device pass.
 
 ## Known limitations
 

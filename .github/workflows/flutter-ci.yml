@@ -29,7 +29,9 @@ jobs:
           cache: true
 
       - name: Show toolchain
-        run: flutter --version
+        run: |
+          flutter --version
+          /bin/sh --version 2>/dev/null || true
 
       - name: Install dependencies
         run: flutter pub get

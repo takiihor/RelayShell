@@ -73,6 +73,11 @@ class ConversationController extends ChangeNotifier {
   /// framing wrapper itself is being parsed. The BEGIN marker is emitted only
   /// after staging, so the PTY's echo and continuation prompts are discarded
   /// instead of being mistaken for command output.
+  ///
+  /// The eval + END marker live in one shell compound command on one input line.
+  /// This is critical for interactive programs: the shell parses the footer
+  /// before starting eval, so Herdr/read/Codex cannot consume RelayShell's own
+  /// footer bytes as if they were user stdin.
   void submit(String rawCommand) {
     // Preserve the user's shell text exactly. In particular, trailing spaces
     // can be meaningful after a line-continuation backslash, so Conversation
@@ -104,13 +109,14 @@ class ConversationController extends ChangeNotifier {
       ..writeln(command)
       ..writeln(delimiter)
       ..writeln(')"')
-      ..writeln("printf '\\036RELAYSHELL_BEGIN:$token\\037\\n'")
-      ..writeln('eval "\$__relayshell_cmd"')
-      ..writeln('__relayshell_status=$?')
-      ..writeln(
-        "printf '\\036RELAYSHELL_END:$token:%s\\037\\n' \"\$__relayshell_status\"",
+      ..write('{ ')
+      ..write("printf '\\036RELAYSHELL_BEGIN:$token\\037\\n'; ")
+      ..write('eval "\$__relayshell_cmd"; ')
+      ..write('__relayshell_status=\$?; ')
+      ..write(
+        "printf '\\036RELAYSHELL_END:$token:%s\\037\\n' \"\$__relayshell_status\"; ",
       )
-      ..writeln('unset __relayshell_cmd __relayshell_status');
+      ..writeln('unset __relayshell_cmd __relayshell_status; }');
 
     session.sendText(wrapper.toString(), submit: true);
   }

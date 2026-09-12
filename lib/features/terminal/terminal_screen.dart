@@ -16,6 +16,7 @@ import 'terminal_session.dart';
 import 'touch_selection_menu_detector.dart';
 import 'two_finger_swipe_detector.dart';
 import '../conversation_shell/conversation_view.dart';
+import 'herdr_composer.dart';
 
 /// The interactive terminal (SPEC 10).
 ///
@@ -124,7 +125,7 @@ class _TerminalScreenState extends ConsumerState<TerminalScreen> {
         session: session,
         onSearch: () => setState(() => _searching = !_searching),
         searching: _searching,
-        onMode: session.conversation == null
+        onMode: session.conversation == null && !session.isHerdrPane
             ? null
             : () => setState(() {
                 _terminalMode = !_terminalMode;
@@ -165,7 +166,7 @@ class _TerminalScreenState extends ConsumerState<TerminalScreen> {
                         controller: session.controller,
                         scrollController: _scrollController,
                         focusNode: _focusNode,
-                        autofocus: true,
+                        autofocus: !session.isHerdrPane || _terminalMode,
                         theme: namedTheme.theme,
                         padding: const EdgeInsets.symmetric(
                           horizontal: 6,
@@ -193,7 +194,10 @@ class _TerminalScreenState extends ConsumerState<TerminalScreen> {
                     ),
                   ),
           ),
-          if (session.conversation == null || _terminalMode)
+          if (session.isHerdrPane && !_terminalMode)
+            HerdrComposer(key: ValueKey(session.id), session: session),
+          if (session.conversation == null && !session.isHerdrPane ||
+              _terminalMode)
             AccessoryKeyboard(
               rows: preferences.accessoryKeyRows,
               haptics: preferences.hapticFeedback,
@@ -386,7 +390,11 @@ class _TerminalAppBar extends ConsumerWidget implements PreferredSizeWidget {
         if (onMode != null)
           IconButton(
             onPressed: onMode,
-            tooltip: terminalMode ? l10n.conversationTitle : l10n.terminalTitle,
+            tooltip: terminalMode
+                ? session.isHerdrPane
+                      ? l10n.herdrCompose
+                      : l10n.conversationTitle
+                : l10n.terminalTitle,
             icon: Icon(
               terminalMode ? Icons.chat_bubble_outline : Icons.terminal,
             ),

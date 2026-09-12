@@ -12,6 +12,36 @@ import '../../shared/widgets/common.dart';
 import '../hosts/host_key_dialog.dart';
 import '../terminal/terminal_providers.dart';
 import 'session_launcher.dart';
+import '../../core/ssh/herdr_service.dart';
+
+Future<void> openHerdrPane(
+  BuildContext context,
+  WidgetRef ref,
+  Host host,
+  String name,
+  HerdrPane pane, {
+  Project? project,
+}) => _launch(context, ref, () async {
+  final manager = ref.read(terminalManagerProvider);
+  final existing = manager.findAttached(
+    hostId: host.id,
+    tmuxSessionName: name,
+    herdrTerminalId: pane.terminalId,
+  );
+  if (existing != null) {
+    manager.setActive(existing.id);
+    if (existing.canReconnect) await existing.reconnect();
+    return existing.id;
+  }
+  final session = await manager.open(
+    host: host,
+    project: project,
+    plan: HerdrService.attach(name, pane.terminalId),
+    preferences: ref.read(preferencesProvider),
+    title: pane.title,
+  );
+  return session.id;
+});
 
 Future<void> openConversationShell(
   BuildContext context,

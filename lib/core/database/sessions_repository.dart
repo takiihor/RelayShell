@@ -74,11 +74,18 @@ class SessionsRepository extends Repository {
   Future<SessionRecord?> byTmuxName({
     required String hostId,
     required String tmuxSessionName,
+    String? herdrTerminalId,
   }) async {
     final rows = await db.query(
       table,
-      where: 'host_id = ? AND tmux_session_name = ?',
-      whereArgs: [hostId, tmuxSessionName],
+      where:
+          'host_id = ? AND tmux_session_name = ? AND '
+          '${herdrTerminalId == null ? 'herdr_terminal_id IS NULL' : 'herdr_terminal_id = ?'}',
+      whereArgs: [
+        hostId,
+        tmuxSessionName,
+        ?herdrTerminalId,
+      ],
       limit: 1,
     );
     if (rows.isEmpty) return null;
@@ -239,6 +246,7 @@ class _RecentSessionTarget {
     this.workingDirectory,
     this.launchCommandId,
     this.launchCommand,
+    this.herdrTerminalId,
   });
 
   factory _RecentSessionTarget.from(SessionRecord record) {
@@ -247,6 +255,7 @@ class _RecentSessionTarget {
         hostId: record.hostId,
         mode: record.mode,
         tmuxSessionName: record.tmuxSessionName,
+        herdrTerminalId: record.herdrTerminalId,
       );
     }
     return _RecentSessionTarget(
@@ -268,6 +277,7 @@ class _RecentSessionTarget {
   final String? workingDirectory;
   final String? launchCommandId;
   final String? launchCommand;
+  final String? herdrTerminalId;
 
   @override
   bool operator ==(Object other) =>
@@ -276,6 +286,7 @@ class _RecentSessionTarget {
       other.mode == mode &&
       other.projectId == projectId &&
       other.tmuxSessionName == tmuxSessionName &&
+      other.herdrTerminalId == herdrTerminalId &&
       other.displayName == displayName &&
       other.workingDirectory == workingDirectory &&
       other.launchCommandId == launchCommandId &&
@@ -287,6 +298,7 @@ class _RecentSessionTarget {
     mode,
     projectId,
     tmuxSessionName,
+    herdrTerminalId,
     displayName,
     workingDirectory,
     launchCommandId,

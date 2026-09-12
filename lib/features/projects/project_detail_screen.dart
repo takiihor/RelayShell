@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+
+import '../terminal/herdr_panes_sheet.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -160,6 +163,19 @@ class _ProjectDetailView extends ConsumerWidget {
                       ),
                     ),
                     const SizedBox(height: 14),
+                    if (host != null &&
+                        host.platform == RemotePlatform.posix &&
+                        host.multiplexer == MultiplexerKind.herdr)
+                      FilledButton.icon(
+                        onPressed: () => showHerdrPanes(
+                          context,
+                          ref,
+                          host,
+                          project: project,
+                        ),
+                        icon: const Icon(Icons.dashboard_outlined),
+                        label: Text(l10n.herdrPanes),
+                      ),
                     if (host != null && host.platform == RemotePlatform.posix)
                       OutlinedButton.icon(
                         onPressed: () => openConversationShell(

@@ -1617,6 +1617,42 @@ class AppLocalizationsEn extends AppLocalizations {
   String get conversationOpen => 'Open Shell';
 
   @override
+  String get herdrPanes => 'Herdr panes';
+
+  @override
+  String get herdrSession => 'Herdr session';
+
+  @override
+  String get herdrUnavailable =>
+      'Could not load Herdr panes. Check the connection and that Herdr 0.8 or newer is running on this computer.';
+
+  @override
+  String get herdrEmpty =>
+      'No panes found. Start Herdr on your computer, then refresh here.';
+
+  @override
+  String get herdrCompose => 'Message or command';
+
+  @override
+  String get herdrSend => 'Send to pane';
+
+  @override
+  String get herdrSent => 'Input sent to Herdr';
+
+  @override
+  String get herdrDeliveryUnknown =>
+      'Delivery was not confirmed. Your draft is kept. Check the pane before retrying; it may already have received the input.';
+
+  @override
+  String get herdrScrollUp => 'Scroll remote pane up';
+
+  @override
+  String get herdrScrollDown => 'Scroll remote pane down';
+
+  @override
+  String get herdrEscape => 'Send Escape';
+
+  @override
   String get conversationTitle => 'Conversation Shell';
 
   @override

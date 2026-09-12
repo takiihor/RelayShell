@@ -11,6 +11,7 @@ import '../../core/shell/shell_quoting.dart';
 import '../../core/ssh/connection_manager.dart';
 import '../../core/ssh/ssh_connection.dart';
 import '../../core/ssh/ssh_failure.dart';
+import '../../core/ssh/herdr_service.dart';
 import '../../shared/models/models.dart';
 import 'terminal_input_modifiers.dart';
 import '../conversation_shell/conversation_session.dart';
@@ -62,6 +63,8 @@ class TerminalSession extends ChangeNotifier {
   final SessionLaunchPlan launchPlan;
   final ConnectionManager connections;
   final ConversationSession? conversation;
+  bool get isHerdrPane => launchPlan.herdrTerminalId != null;
+  String paneDraft = '';
 
   /// The local session record this terminal resumes or created, if any.
   final String? sessionRecordId;
@@ -81,6 +84,8 @@ class TerminalSession extends ChangeNotifier {
   StreamSubscription<Uint8List>? _stderr;
   StreamSubscription<SshConnectionStatus>? _connectionStatus;
   bool _restoringAfterReconnect = false;
+  bool _herdrAttached = false;
+  bool _intentionalDetach = false;
 
   TerminalSessionState _state = TerminalSessionState.starting;
   TerminalSessionState get state => _state;
@@ -116,6 +121,7 @@ class TerminalSession extends ChangeNotifier {
     if (name != null) {
       final label = multiplexer?.storageValue ?? 'session';
       parts.add('$label: $name');
+      if (isHerdrPane) parts.add(launchPlan.herdrTerminalId!);
     } else {
       parts.add('shell');
     }
@@ -158,7 +164,7 @@ class TerminalSession extends ChangeNotifier {
       // ends the channel cleanly.
       shell = await connection.execute(
         plan.shellCommand!,
-        pty: true,
+        pty: !isHerdrPane,
         columns: terminal.viewWidth,
         rows: terminal.viewHeight,
       );
@@ -171,6 +177,38 @@ class TerminalSession extends ChangeNotifier {
     }
 
     _shell = shell;
+    _herdrAttached = false;
+    _intentionalDetach = false;
+    final bridgeReady = Completer<void>();
+    void bridgeFailure(Object error) {
+      final failure = SshFailure(
+        kind: SshFailureKind.featureUnavailable,
+        message: 'Herdr pane connection ended: $error',
+        action: 'Reconnect to the same pane. Herdr 0.8 or newer is required; another controller is never taken over automatically.',
+      );
+      _failure = failure;
+      if (!bridgeReady.isCompleted) bridgeReady.completeError(failure);
+      _setState(TerminalSessionState.failed);
+      shell.close();
+    }
+
+    final bridge = isHerdrPane
+        ? HerdrStreamDecoder(
+            onFrame: (data) {
+              _herdrAttached = true;
+              terminal.write(data);
+              if (!bridgeReady.isCompleted) bridgeReady.complete();
+            },
+            onClosed: (reason) {
+              if (_intentionalDetach) {
+                _setState(TerminalSessionState.ended);
+                shell.close();
+              } else {
+                bridgeFailure(reason);
+              }
+            },
+          )
+        : null;
     conversation?.connecting();
     conversation?.send = (data) {
       _shell?.write(Uint8List.fromList(utf8.encode(data)));
@@ -179,7 +217,17 @@ class TerminalSession extends ChangeNotifier {
     final stdoutDecoder = const Utf8Decoder(allowMalformed: true)
         .startChunkedConversion(
           StringConversionSink.fromStringSink(
-            _TerminalOutputSink(_writeToTerminal),
+            _TerminalOutputSink((data) {
+              if (bridge == null) {
+                _writeToTerminal(data);
+              } else {
+                try {
+                  bridge.add(data);
+                } catch (error) {
+                  bridgeFailure(error);
+                }
+              }
+            }),
           ),
         );
     final stderrDecoder = const Utf8Decoder(allowMalformed: true)
@@ -191,7 +239,19 @@ class TerminalSession extends ChangeNotifier {
 
     _stdout = shell.stdout.listen(
       stdoutDecoder.add,
-      onDone: stdoutDecoder.close,
+      onDone: () {
+        stdoutDecoder.close();
+        if (bridge != null) {
+          try {
+            bridge.finish();
+          } catch (error) {
+            bridgeFailure(error);
+          }
+          if (!bridgeReady.isCompleted) {
+            bridgeFailure('No terminal frame received.');
+          }
+        }
+      },
       onError: (_) {},
       cancelOnError: false,
     );
@@ -207,11 +267,15 @@ class TerminalSession extends ChangeNotifier {
       if (session == null) return;
       conversation?.terminalInput();
       final output = inputModifiers.applyTerminalInput(data);
-      session.write(Uint8List.fromList(utf8.encode(output)));
+      _writeInput(output);
     };
 
     terminal.onResize = (width, height, pixelWidth, pixelHeight) {
-      _shell?.resizeTerminal(width, height, pixelWidth, pixelHeight);
+      if (isHerdrPane) {
+        _writeBridge(HerdrStreamDecoder.resize(width, height));
+      } else {
+        _shell?.resizeTerminal(width, height, pixelWidth, pixelHeight);
+      }
     };
 
     terminal.onTitleChange = (title) {
@@ -227,6 +291,17 @@ class TerminalSession extends ChangeNotifier {
     final initialInput = plan.initialInput;
     if (initialInput != null && initialInput.isNotEmpty) {
       shell.write(Uint8List.fromList(utf8.encode(initialInput)));
+    }
+    if (bridge != null) {
+      try {
+        await bridgeReady.future.timeout(const Duration(seconds: 10));
+        _writeBridge(
+          HerdrStreamDecoder.resize(terminal.viewWidth, terminal.viewHeight),
+        );
+      } catch (_) {
+        shell.close();
+        rethrow;
+      }
     }
   }
 
@@ -257,7 +332,12 @@ class TerminalSession extends ChangeNotifier {
     _connectionStatus?.cancel();
     _connectionStatus = connection.statusStream.listen((status) {
       if (status.state == SshConnectionState.failed &&
-          _state == TerminalSessionState.running) {
+          (_state == TerminalSessionState.running ||
+              isHerdrPane &&
+                  _herdrAttached &&
+                  !_intentionalDetach &&
+                  (_state == TerminalSessionState.ended ||
+                      _state == TerminalSessionState.failed))) {
         _failure = status.failure;
         _writeSystemLine(status.failure?.message ?? 'Connection lost.');
         _setState(TerminalSessionState.disconnected);
@@ -335,7 +415,7 @@ class TerminalSession extends ChangeNotifier {
     if (session == null) return;
     conversation?.terminalInput();
     final payload = submit && !text.endsWith('\n') ? '$text\n' : text;
-    session.write(Uint8List.fromList(utf8.encode(payload)));
+    _writeInput(payload);
   }
 
   /// Sends a raw control sequence, e.g. Ctrl+C.
@@ -343,7 +423,32 @@ class TerminalSession extends ChangeNotifier {
     final session = _shell;
     if (session == null) return;
     conversation?.terminalInput();
-    session.write(Uint8List.fromList(utf8.encode(sequence)));
+    _writeInput(sequence);
+  }
+
+  void _writeInput(String text) =>
+      _writeBridge(isHerdrPane ? HerdrStreamDecoder.input(text) : text);
+  void _writeBridge(String data) =>
+      _shell?.write(Uint8List.fromList(utf8.encode(data)));
+
+  void scrollHerdr(bool up) {
+    if (isHerdrPane && isLive) _writeBridge(HerdrStreamDecoder.scroll(up));
+  }
+
+  Future<void> submitPane(String text) async {
+    if (!isHerdrPane || !isLive) {
+      throw StateError('The Herdr pane is not connected.');
+    }
+    final connection = connections.connectionFor(host.id);
+    if (connection == null) {
+      throw StateError('The SSH connection is not available.');
+    }
+    await const HerdrService().submit(
+      connection,
+      tmuxSessionName!,
+      launchPlan.herdrTerminalId!,
+      text,
+    );
   }
 
   /// Pastes text through the terminal so bracketed-paste mode is respected.
@@ -366,6 +471,11 @@ class TerminalSession extends ChangeNotifier {
   /// Herdr share the `Ctrl+B` prefix but differ in the key that follows, so the
   /// sequence comes from the backend rather than being hard-coded here.
   void detach() {
+    if (isHerdrPane) {
+      _intentionalDetach = true;
+      _writeBridge(HerdrStreamDecoder.release);
+      return;
+    }
     final kind = multiplexer;
     if (!isPersistent || kind == null) return;
     sendRaw(Multiplexer.of(kind, quoter: ShellQuoter.posix).detachSequence);
@@ -400,6 +510,7 @@ class TerminalSession extends ChangeNotifier {
 
   /// Closes this terminal. Remote work in a persistent session keeps running.
   Future<void> close() async {
+    _intentionalDetach = true;
     await _connectionStatus?.cancel();
     _connectionStatus = null;
     await _detachShell();

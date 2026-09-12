@@ -122,6 +122,32 @@ void main() {
   });
 
   group('import', () {
+    test(
+      'restores stable Herdr terminal identity with the remapped host',
+      () async {
+        await seed();
+        await SessionsRepository(database).upsert(
+          SessionRecord(
+            id: 'pane',
+            hostId: 'h1',
+            displayName: 'Agent',
+            mode: SessionMode.persistent,
+            tmuxSessionName: 'daily',
+            herdrTerminalId: 'term_stable',
+            createdAt: DateTime.now(),
+            lastUsedAt: DateTime.now(),
+          ),
+        );
+        final json = await transfer.exportToJson();
+        await database.deleteAllRows();
+        await transfer.import(json);
+        final restored = (await SessionsRepository(database).all()).single;
+        expect(restored.herdrTerminalId, 'term_stable');
+        expect(restored.tmuxSessionName, 'daily');
+        expect(restored.hostId, (await hosts.all()).single.id);
+      },
+    );
+
     test('restores an exported document', () async {
       await seed();
       final json = await transfer.exportToJson();

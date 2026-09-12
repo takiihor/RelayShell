@@ -14,6 +14,7 @@ import '../../shared/widgets/status_indicator.dart';
 import '../commands/command_runner.dart';
 import '../sessions/session_actions.dart';
 import '../terminal/terminal_providers.dart';
+import '../terminal/herdr_panes_sheet.dart';
 
 /// Everything you can do with one computer (SPEC 8.5).
 class HostDetailScreen extends ConsumerWidget {
@@ -140,6 +141,13 @@ class _HostDetailView extends ConsumerWidget {
                       ),
                     ],
                     const SizedBox(height: 14),
+                    if (host.platform == RemotePlatform.posix &&
+                        host.multiplexer == MultiplexerKind.herdr)
+                      FilledButton.icon(
+                        onPressed: () => showHerdrPanes(context, ref, host),
+                        icon: const Icon(Icons.dashboard_outlined),
+                        label: Text(l10n.herdrPanes),
+                      ),
                     if (host.platform == RemotePlatform.posix)
                       OutlinedButton.icon(
                         onPressed: () =>

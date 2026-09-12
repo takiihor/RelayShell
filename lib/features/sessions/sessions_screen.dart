@@ -132,7 +132,9 @@ class _SessionTile extends ConsumerWidget {
         itemBuilder: (context) => [
           PopupMenuItem(value: 'resume', child: Text(l10n.actionResume)),
           PopupMenuItem(value: 'rename', child: Text(l10n.actionRename)),
-          if (record.isPersistent && host != null)
+          if (record.isPersistent &&
+              host != null &&
+              record.herdrTerminalId == null)
             PopupMenuItem(value: 'kill', child: Text(l10n.sessionsKill)),
           PopupMenuItem(value: 'forget', child: Text(l10n.sessionsForget)),
         ],
@@ -162,7 +164,7 @@ class _SessionTile extends ConsumerWidget {
         await ref.read(sessionsRepositoryProvider).rename(record.id, name);
 
       case 'kill':
-        if (host == null) return;
+        if (host == null || record.herdrTerminalId != null) return;
         final confirmed = await confirmDestructive(
           context,
           title: l10n.sessionsKillTitle,
@@ -257,9 +259,8 @@ class _HostTmuxSectionState extends ConsumerState<_HostTmuxSection> {
       if (mounted) {
         setState(() {
           _sessions = const [];
-          _unavailableReason = AppLocalizations.of(
-            context,
-          ).sessionsTmuxMissingBody(error.kind.label);
+          _unavailableReason = AppLocalizations.of(context)
+              .sessionsTmuxMissingBody(error.kind.label);
         });
       }
     } on SshFailure catch (failure) {

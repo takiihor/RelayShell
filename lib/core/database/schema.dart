@@ -6,7 +6,7 @@
 library;
 
 /// Current schema version. Increment when adding a [schemaMigrations] entry.
-const int schemaVersion = 2;
+const int schemaVersion = 3;
 
 /// One forward migration step.
 class SchemaMigration {
@@ -193,6 +193,19 @@ const List<SchemaMigration> schemaMigrations = [
     version: 2,
     statements: [
       "ALTER TABLE hosts ADD COLUMN multiplexer TEXT NOT NULL DEFAULT 'tmux'",
+    ],
+  ),
+  SchemaMigration(
+    version: 3,
+    statements: [
+      'ALTER TABLE session_records ADD COLUMN herdr_terminal_id TEXT',
+      'DROP INDEX idx_sessions_tmux',
+      '''CREATE UNIQUE INDEX idx_sessions_tmux
+         ON session_records(host_id, tmux_session_name)
+         WHERE tmux_session_name IS NOT NULL AND herdr_terminal_id IS NULL''',
+      '''CREATE UNIQUE INDEX idx_sessions_herdr_pane
+         ON session_records(host_id, tmux_session_name, herdr_terminal_id)
+         WHERE herdr_terminal_id IS NOT NULL''',
     ],
   ),
 ];

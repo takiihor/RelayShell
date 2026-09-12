@@ -41,16 +41,27 @@ class AppPreferences {
     this.locale,
   });
 
-  /// SPEC 10.3: a default row plus a configurable second row.
+  /// Mobile coding-agent defaults shared by Terminal and Conversation Mode.
   ///
-  /// The second row carries the scrollback keys because a persistent session
-  /// runs in the alternate screen buffer, where dragging is the only way to
-  /// scroll and it only works if the remote program reports mouse input. A
-  /// visible SCRL key means the user is never stuck with an unscrollable
-  /// screen and no idea why.
+  /// CTRL/SHIFT/ALT/TAB are deliberately first-class because Herdr, Codex,
+  /// Claude Code and terminal TUIs depend on real modifier sequences that are
+  /// awkward or impossible to produce reliably from a phone keyboard. The
+  /// second row keeps shell punctuation and explicit scroll/interrupt controls
+  /// one tap away.
   static const List<List<String>> defaultAccessoryRows = [
-    ['esc', 'ctrl', 'alt', 'tab', 'up', 'left', 'down', 'right'],
-    ['wheel_up', 'wheel_down', 'pipe', 'tilde', 'slash', 'dash', 'ctrl_c'],
+    ['esc', 'ctrl', 'shift', 'alt', 'tab', 'up', 'left', 'down', 'right'],
+    [
+      'wheel_up',
+      'wheel_down',
+      'slash',
+      'tilde',
+      'pipe',
+      'ampersand',
+      'dash',
+      'underscore',
+      'colon',
+      'ctrl_c',
+    ],
   ];
 
   final AppThemeMode themeMode;

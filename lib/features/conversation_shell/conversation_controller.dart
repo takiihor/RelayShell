@@ -29,6 +29,15 @@ class ConversationController extends ChangeNotifier {
   static final RegExp _ansiEscape = RegExp(
     r'\x1B(?:\[[0-?]*[ -/]*[@-~]|\][^\x07]*(?:\x07|\x1B\\))',
   );
+  static final RegExp _interactiveCommand = RegExp(
+    r'^\s*(?:(?:sudo|env)\s+)*(?:herdr|ctxguard|pi|codex|claude|opencode|gemini|ssh|mosh|vim|nvim|nano|htop|top|less|more)\b',
+    caseSensitive: false,
+  );
+  static const List<String> _alternateScreenEnable = [
+    '\x1b[?1049h',
+    '\x1b[?1047h',
+    '\x1b[?47h',
+  ];
 
   StreamSubscription<String>? _outputSubscription;
   final List<ConversationCommand> _commands = [];
@@ -52,6 +61,9 @@ class ConversationController extends ChangeNotifier {
 
   bool get canSubmit =>
       supportsConversation && session.isLive && _activeId == null;
+
+  bool get canSendProcessInput =>
+      supportsConversation && session.isLive && _activeId != null;
 
   /// Sends [rawCommand] through the current POSIX shell without spawning a new
   /// SSH exec channel. `eval` is a shell special builtin, so state changes such
@@ -78,6 +90,7 @@ class ConversationController extends ChangeNotifier {
         command: command,
         startedAt: now,
         state: ConversationCommandState.running,
+        interactiveHint: _interactiveCommand.hasMatch(command),
       ),
     );
     _activeId = id;
@@ -100,6 +113,37 @@ class ConversationController extends ChangeNotifier {
       ..writeln('unset __relayshell_cmd __relayshell_status');
 
     session.sendText(wrapper.toString(), submit: true);
+  }
+
+  /// Sends a human-readable line to the foreground process without starting a
+  /// second framed shell command. This is the path used to chat with Herdr,
+  /// Codex, Claude Code, Pi and other interactive programs while their original
+  /// command remains active.
+  void sendProcessInput(String text, {bool submit = true}) {
+    final id = _activeId;
+    if (id == null || !canSendProcessInput || text.isEmpty) return;
+
+    final index = _commands.indexWhere((command) => command.id == id);
+    if (index >= 0) {
+      final current = _commands[index];
+      _commands[index] = current.copyWith(
+        processInputs: [
+          ...current.processInputs,
+          ConversationProcessInput(text: text, sentAt: DateTime.now()),
+        ],
+      );
+      notifyListeners();
+    }
+
+    session.sendText(text, submit: submit);
+  }
+
+  /// Sends an exact terminal sequence to the foreground process. Accessory
+  /// keys use this path so Ctrl/Alt/Shift/Tab/arrows behave exactly as they do
+  /// in Terminal Mode and do not get recorded as fake chat messages.
+  void sendRawToActive(String sequence) {
+    if (!canSendProcessInput || sequence.isEmpty) return;
+    session.sendRaw(sequence);
   }
 
   /// Interrupts the foreground command while leaving the SSH transport and
@@ -194,13 +238,20 @@ class ConversationController extends ChangeNotifier {
     if (index < 0) return;
 
     final current = _commands[index];
+    final fullScreenDetected =
+        current.fullScreenDetected ||
+        _alternateScreenEnable.any(text.contains);
     var output = _plainText(current.output + text);
     var truncated = current.truncated;
     if (output.length > maxRenderedCharacters) {
       output = output.substring(output.length - maxRenderedCharacters);
       truncated = true;
     }
-    _commands[index] = current.copyWith(output: output, truncated: truncated);
+    _commands[index] = current.copyWith(
+      output: output,
+      truncated: truncated,
+      fullScreenDetected: fullScreenDetected,
+    );
     notifyListeners();
   }
 

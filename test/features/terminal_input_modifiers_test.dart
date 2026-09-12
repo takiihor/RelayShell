@@ -23,6 +23,23 @@ void main() {
     expect(modifiers.control, ModifierState.armed);
   });
 
+  test('active modifier state covers CTRL, ALT and SHIFT', () {
+    final modifiers = TerminalInputModifiers();
+    expect(modifiers.hasActiveModifier, isFalse);
+
+    modifiers.tapControl();
+    expect(modifiers.hasActiveModifier, isTrue);
+    modifiers.tapControl();
+    expect(modifiers.hasActiveModifier, isFalse);
+
+    modifiers.tapAlt();
+    expect(modifiers.hasActiveModifier, isTrue);
+    modifiers.tapAlt();
+
+    modifiers.tapShift();
+    expect(modifiers.hasActiveModifier, isTrue);
+  });
+
   test('modifier listeners observe the newly armed state', () {
     final modifiers = TerminalInputModifiers();
     ModifierState? observed;

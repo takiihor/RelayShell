@@ -5,6 +5,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../shared/models/enums.dart';
 import '../terminal/terminal_session.dart';
+import 'command_framer.dart';
 import 'conversation_models.dart';
 
 /// Adapts one live [TerminalSession] into command/output blocks.
@@ -21,10 +22,9 @@ class ConversationController extends ChangeNotifier {
 
   final TerminalSession session;
   final String _nonce;
+  final ConversationCommandFramer _framer = const ConversationCommandFramer();
 
   static const int maxRenderedCharacters = 256 * 1024;
-  static const String _recordSeparator = '\x1e';
-  static const String _unitSeparator = '\x1f';
   static const int _markerTail = 192;
   static final RegExp _ansiEscape = RegExp(
     r'\x1B(?:\[[0-?]*[ -/]*[@-~]|\][^\x07]*(?:\x07|\x1B\\))',
@@ -41,6 +41,7 @@ class ConversationController extends ChangeNotifier {
 
   StreamSubscription<String>? _outputSubscription;
   final List<ConversationCommand> _commands = [];
+  ConversationCommandFrame? _activeFrame;
   String _buffer = '';
   String? _activeId;
   bool _capturing = false;
@@ -68,16 +69,6 @@ class ConversationController extends ChangeNotifier {
   /// Sends [rawCommand] through the current POSIX shell without spawning a new
   /// SSH exec channel. `eval` is a shell special builtin, so state changes such
   /// as `cd`, `export` and environment activation remain in this PTY.
-  ///
-  /// A quoted heredoc stages multi-line input without evaluating it while the
-  /// framing wrapper itself is being parsed. The BEGIN marker is emitted only
-  /// after staging, so the PTY's echo and continuation prompts are discarded
-  /// instead of being mistaken for command output.
-  ///
-  /// The eval + END marker live in one shell compound command on one input line.
-  /// This is critical for interactive programs: the shell parses the footer
-  /// before starting eval, so Herdr/read/Codex cannot consume RelayShell's own
-  /// footer bytes as if they were user stdin.
   void submit(String rawCommand) {
     // Preserve the user's shell text exactly. In particular, trailing spaces
     // can be meaningful after a line-continuation backslash, so Conversation
@@ -86,8 +77,8 @@ class ConversationController extends ChangeNotifier {
     if (command.trim().isEmpty || !canSubmit) return;
 
     final id = '${_sequence++}';
-    final token = '$_nonce-$id';
     final now = DateTime.now();
+    final frame = _framer.build(nonce: _nonce, id: id, command: command);
 
     _commands.add(
       ConversationCommand(
@@ -99,26 +90,12 @@ class ConversationController extends ChangeNotifier {
       ),
     );
     _activeId = id;
+    _activeFrame = frame;
     _capturing = false;
     _buffer = '';
     notifyListeners();
 
-    final delimiter = '__RELAYSHELL_$token__';
-    final wrapper = StringBuffer()
-      ..writeln('__relayshell_cmd="\$(cat <<\'$delimiter\'')
-      ..writeln(command)
-      ..writeln(delimiter)
-      ..writeln(')"')
-      ..write('{ ')
-      ..write("printf '\\036RELAYSHELL_BEGIN:$token\\037\\n'; ")
-      ..write('eval "\$__relayshell_cmd"; ')
-      ..write('__relayshell_status=\$?; ')
-      ..write(
-        "printf '\\036RELAYSHELL_END:$token:%s\\037\\n' \"\$__relayshell_status\"; ",
-      )
-      ..writeln('unset __relayshell_cmd __relayshell_status; }');
-
-    session.sendText(wrapper.toString(), submit: true);
+    session.sendText(frame.payload, submit: true);
   }
 
   /// Sends a human-readable line to the foreground process without starting a
@@ -159,16 +136,6 @@ class ConversationController extends ChangeNotifier {
     session.sendRaw('\x03');
   }
 
-  String _beginMarker(String id) {
-    final token = '$_nonce-$id';
-    return '$_recordSeparatorRELAYSHELL_BEGIN:$token$_unitSeparator';
-  }
-
-  String _endPrefix(String id) {
-    final token = '$_nonce-$id';
-    return '$_recordSeparatorRELAYSHELL_END:$token:';
-  }
-
   void _onOutput(String chunk) {
     if (_activeId == null) return;
     _buffer += chunk;
@@ -177,10 +144,11 @@ class ConversationController extends ChangeNotifier {
 
   void _drainBuffer() {
     final id = _activeId;
-    if (id == null) return;
+    final frame = _activeFrame;
+    if (id == null || frame == null) return;
 
     if (!_capturing) {
-      final begin = _beginMarker(id);
+      final begin = frame.beginMarker;
       final index = _buffer.indexOf(begin);
       if (index < 0) {
         // Retain only enough tail to recognise a marker split across chunks.
@@ -200,11 +168,11 @@ class ConversationController extends ChangeNotifier {
       _capturing = true;
     }
 
-    final endPrefix = _endPrefix(id);
+    final endPrefix = frame.endPrefix;
     final endStart = _buffer.indexOf(endPrefix);
     if (endStart >= 0) {
       final markerEnd = _buffer.indexOf(
-        _unitSeparator,
+        ConversationCommandFramer.unitSeparator,
         endStart + endPrefix.length,
       );
       if (markerEnd < 0) {
@@ -277,6 +245,7 @@ class ConversationController extends ChangeNotifier {
       completedAt: DateTime.now(),
     );
     _activeId = null;
+    _activeFrame = null;
     _capturing = false;
     _buffer = '';
     notifyListeners();
@@ -300,6 +269,7 @@ class ConversationController extends ChangeNotifier {
       );
     }
     _activeId = null;
+    _activeFrame = null;
     _capturing = false;
     _buffer = '';
     notifyListeners();

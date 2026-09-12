@@ -140,6 +140,13 @@ class _HostDetailView extends ConsumerWidget {
                       ),
                     ],
                     const SizedBox(height: 14),
+                    if (host.platform == RemotePlatform.posix)
+                      OutlinedButton.icon(
+                        onPressed: () =>
+                            openConversationShell(context, ref, host),
+                        icon: const Icon(Icons.chat_bubble_outline),
+                        label: Text(l10n.conversationOpen),
+                      ),
                     Row(
                       children: [
                         Expanded(

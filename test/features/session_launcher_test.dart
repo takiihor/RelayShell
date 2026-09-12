@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:relayshell/features/conversation_shell/conversation_session.dart';
 import 'package:relayshell/core/database/app_database.dart';
 import 'package:relayshell/core/database/commands_repository.dart';
 import 'package:relayshell/core/database/credentials_repository.dart';
@@ -280,6 +281,7 @@ class _MatchingTerminalManager extends TerminalManager {
     Project? project,
     String? title,
     String? sessionRecordId,
+    ConversationSession? conversation,
   }) async {
     opened = true;
     return openResult ?? (throw StateError('Unexpected terminal open.'));

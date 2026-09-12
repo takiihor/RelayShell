@@ -1614,6 +1614,95 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get conversationOpen => 'Open Shell';
+
+  @override
+  String get conversationTitle => 'Conversation Shell';
+
+  @override
+  String get conversationIntro =>
+      'Run real commands and read their output here. This is a dedicated Bash shell: directory changes, exports and activated environments stay in this session.\n\nUse Terminal for passwords, editors and interactive tools. Direct sessions start fresh after reconnecting. Recent commands and output stay in memory only.';
+
+  @override
+  String get conversationCommand => 'Shell command';
+
+  @override
+  String get conversationOutput => 'Shell output';
+
+  @override
+  String get conversationConnecting => 'Waiting for the shell…';
+
+  @override
+  String get conversationUnavailable =>
+      'Shell framing is unavailable. Open Terminal to inspect or reconnect for a fresh shell.';
+
+  @override
+  String get conversationRunningHint =>
+      'Running. You can draft the next command. Use Terminal if input is needed.';
+
+  @override
+  String get conversationRunning => 'Running';
+
+  @override
+  String get conversationUnknown => 'Session lost · result unknown';
+
+  @override
+  String get conversationInterrupted => 'Interrupted';
+
+  @override
+  String conversationExit(int code) {
+    return 'Exit $code';
+  }
+
+  @override
+  String get conversationInteractive =>
+      'Interactive program detected. Continue in Terminal.';
+
+  @override
+  String get conversationTruncated =>
+      'Older output removed. Showing the most recent 32K characters.';
+
+  @override
+  String get conversationLatest => 'Latest output';
+
+  @override
+  String get conversationPrevious => 'Previous command';
+
+  @override
+  String get conversationNext => 'Next command or draft';
+
+  @override
+  String get conversationClear => 'Clear completed cards';
+
+  @override
+  String get conversationActions => 'Command actions';
+
+  @override
+  String get conversationEdit => 'Edit command';
+
+  @override
+  String get conversationRunAgain => 'Run again';
+
+  @override
+  String get conversationCopyOutput => 'Copy output';
+
+  @override
+  String get conversationCopied => 'Copied to clipboard';
+
+  @override
+  String get conversationInputLimit =>
+      'Shorten the command or remove unsupported control characters.';
+
+  @override
+  String get conversationRestarted =>
+      'Fresh shell after reconnect. Earlier cards belong to the previous shell.';
+
+  @override
+  String conversationStatus(String status, String seconds) {
+    return '$status · ${seconds}s';
+  }
+
+  @override
   String get timeYesterday => 'yesterday';
 
   @override

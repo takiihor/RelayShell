@@ -92,6 +92,21 @@ void main() {
       await opening;
     },
   );
+  test('repeated Open Shell focuses the pending conversation PTY', () async {
+    final opening = terminals.openConversation(
+      host: host,
+      preferences: const AppPreferences(),
+    );
+    expect(terminals.tabs.single.conversation, isNotNull);
+    final focused = await terminals.openConversation(
+      host: host,
+      preferences: const AppPreferences(),
+    );
+    expect(identical(focused, terminals.tabs.single), isTrue);
+    expect(terminals.length, 1);
+    connections.fail();
+    await opening;
+  });
 }
 
 class _PendingConnectionManager extends ConnectionManager {

@@ -36,9 +36,13 @@ class ConversationCommandFramer {
     required String command,
   }) {
     final token = '$nonce-$id';
-    final delimiter = '__RELAYSHELL_' + token + '__';
-    final begin = recordSeparator + 'RELAYSHELL_BEGIN:' + token + unitSeparator;
-    final endPrefix = recordSeparator + 'RELAYSHELL_END:' + token + ':';
+
+    // Adjacent literals deliberately terminate each interpolation before the
+    // next identifier-like text. This avoids both Dart interpolation ambiguity
+    // (`$token__`) and unnecessary-brace / string-composition analyzer lints.
+    final delimiter = '__RELAYSHELL_$token' '__';
+    final begin = '$recordSeparator' 'RELAYSHELL_BEGIN:$token' '$unitSeparator';
+    final endPrefix = '$recordSeparator' 'RELAYSHELL_END:$token:';
 
     // The command body is staged first so its text cannot be confused with
     // output. More importantly, eval + footer are one compound shell command

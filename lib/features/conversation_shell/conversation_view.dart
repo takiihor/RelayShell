@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../l10n/app_localizations.dart';
+import '../../shared/theme/status_colors.dart';
 import '../../shared/widgets/common.dart';
 import '../commands/command_edit_screen.dart';
 import '../terminal/terminal_session.dart';
@@ -365,6 +366,7 @@ class _ConversationViewState extends State<ConversationView> {
   Widget _card(ConversationCommand entry) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
+    final running = entry.state == ConversationCommandState.running;
     final duration = (entry.completedAt ?? DateTime.now()).difference(
       entry.submittedAt,
     );
@@ -375,6 +377,24 @@ class _ConversationViewState extends State<ConversationView> {
       ConversationCommandState.completed => l10n.conversationExit(
         entry.exitCode!,
       ),
+    };
+    final statusText = l10n.conversationStatus(
+      status,
+      (duration.inMilliseconds / 1000).toStringAsFixed(1),
+    );
+    // Colour encodes the shell result, never an application failure: exit 0
+    // stays quiet, a failed command reads as a normal result, and a lost or
+    // interrupted one is clearly neither (SPEC 37, design 4.4).
+    final statusColor = switch (entry.state) {
+      ConversationCommandState.running => context.statusColors.connecting,
+      ConversationCommandState.interrupted ||
+      ConversationCommandState.unknown =>
+        context.statusColors.warning,
+      ConversationCommandState.completed when (
+        entry.exitCode ?? 0
+      ) != 0 =>
+        context.statusColors.error,
+      _ => theme.colorScheme.onSurfaceVariant,
     };
     return Card(
       child: Padding(
@@ -435,17 +455,36 @@ class _ConversationViewState extends State<ConversationView> {
                 ),
               ],
             ),
-            Text(
-              l10n.conversationStatus(
-                status,
-                (duration.inMilliseconds / 1000).toStringAsFixed(1),
-              ),
-              style: theme.textTheme.labelMedium?.copyWith(
-                color: entry.exitCode != null && entry.exitCode != 0
-                    ? theme.colorScheme.error
-                    : theme.colorScheme.onSurfaceVariant,
+            // A live region announces the transition to a screen reader;
+            // the child text is excluded so it is read exactly once.
+            Semantics(
+              liveRegion: running,
+              label: statusText,
+              child: ExcludeSemantics(
+                child: Text(
+                  statusText,
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: statusColor,
+                  ),
+                ),
               ),
             ),
+            if (running)
+              Wrap(
+                spacing: 8,
+                children: [
+                  TextButton.icon(
+                    onPressed: conversation.interrupt,
+                    icon: const Icon(Icons.stop_circle_outlined),
+                    label: Text(l10n.actionStop),
+                  ),
+                  TextButton.icon(
+                    onPressed: widget.onTerminal,
+                    icon: const Icon(Icons.terminal),
+                    label: Text(l10n.terminalTitle),
+                  ),
+                ],
+              ),
             if (entry.interactive) Text(l10n.conversationInteractive),
             if (entry.truncated) Text(l10n.conversationTruncated),
             if (entry.output.isNotEmpty) ...[

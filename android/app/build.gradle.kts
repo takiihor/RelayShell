@@ -24,6 +24,8 @@ fun requiredKeystoreProperty(name: String): String {
     return value
 }
 
+val parallelInstall = providers.gradleProperty("parallelInstall").orNull == "true"
+
 android {
     namespace = "com.relayshell.relayshell"
     // Pinned rather than `flutter.compileSdkVersion` so the build does not
@@ -44,7 +46,13 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.relayshell.relayshell"
+        applicationId = if (parallelInstall) {
+            "com.relayshell.relayshell.parallel"
+        } else {
+            "com.relayshell.relayshell"
+        }
+        manifestPlaceholders["appLabel"] =
+            if (parallelInstall) "RelayShell Latest" else "RelayShell"
         minSdk = flutter.minSdkVersion
         targetSdk = 36
         // Uses the version code from pubspec.yaml. When using split APKs, 1000 * ABI_VERSION

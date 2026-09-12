@@ -63,11 +63,17 @@ over to the next command. No AI service or separate per-command SSH channel is u
 
 - Draft the next command while output streams; it cannot run until the current
   command completes. History buttons restore earlier commands and your draft.
-- Each card shows its exit status and duration. Its menu supports copy, edit,
-  rerun and saving through the existing command editor. Output is selectable,
-  copyable and shareable.
+- Each card shows its exit status and duration, coloured by outcome (blue while
+  running, amber when the result is lost or interrupted, red only for a non-zero
+  exit — command failure is a result, not an application error). Status changes
+  are announced to screen readers. Its menu supports copy, edit, rerun and saving
+  through the existing command editor. Output is selectable, copyable and shareable.
 - Stop sends Ctrl+C. For passwords, editors, pagers and other interactive tools,
-  switch to Terminal: it displays the **same running PTY**, without restarting work.
+  switch to Terminal: it displays the **same running PTY**, without restarting
+  work. Both actions are available directly on the running card as well as in the
+  status row.
+- A shell opened into a working directory shows that directory in the tab label next
+  to the host.
 - Reading older output pauses automatic scrolling; Latest output returns to the
   live result. Input controls adapt to the keyboard and landscape layouts.
 

@@ -124,6 +124,13 @@ class TerminalSession extends ChangeNotifier {
       if (isHerdrPane) parts.add(launchPlan.herdrTerminalId!);
     } else {
       parts.add('shell');
+      // A conversation shell starts at one known directory; showing it keeps
+      // the header an anchor for where the work happened (design 5.1). It is
+      // the launch directory, not a live `pwd`, which framing does not track.
+      final directory = launchPlan.workingDirectory;
+      if (conversation != null && directory != null && directory.isNotEmpty) {
+        parts.add(directory);
+      }
     }
     return parts.join(' · ');
   }

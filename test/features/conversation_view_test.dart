@@ -8,6 +8,7 @@ import 'package:relayshell/features/conversation_shell/conversation_view.dart';
 import 'package:relayshell/features/terminal/terminal_session.dart';
 import 'package:relayshell/l10n/app_localizations.dart';
 import 'package:relayshell/shared/models/models.dart';
+import 'package:relayshell/shared/theme/status_colors.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 void main() {
@@ -185,6 +186,107 @@ void main() {
       'keep my draft',
     );
   });
+
+  testWidgets('running card exposes Stop and Terminal and announces state', (
+    tester,
+  ) async {
+    var opened = false;
+    void onTerminal() => opened = true;
+    await pump(tester, onTerminal: onTerminal);
+    expect(shell.submit('sleep 30'), isTrue);
+    await pump(tester, onTerminal: onTerminal);
+
+    // The status row is a live region while running so a screen reader
+    // hears the transition, and is coloured like other connecting states.
+    expect(
+      find.byWidgetPredicate(
+        (w) =>
+            w is Semantics &&
+            w.properties.liveRegion == true &&
+            (w.properties.label ?? '').startsWith('Running'),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      tester.widget<Text>(find.textContaining('Running \u00b7')).style?.color,
+      StatusColors.of(Brightness.light).connecting,
+    );
+
+    // Stop is exposed on the card itself, not only in the status row.
+    final stop = tester.widget<TextButton>(
+      find.widgetWithText(TextButton, 'Stop'),
+    );
+    expect(stop.onPressed, isNotNull);
+    await tester.tap(find.widgetWithText(TextButton, 'Stop'));
+    await tester.pump();
+    expect(sent.any((x) => x == '\x03'), isTrue, reason: 'Stop sends Ctrl+C');
+
+    await tester.tap(find.widgetWithText(TextButton, 'Terminal'));
+    await tester.pump();
+    expect(opened, isTrue, reason: 'Terminal hands off to the live session');
+
+    shell.addOutput('\x1b]777;RS:widget:B:1\x07');
+    shell.addOutput('\x1b]777;RS:widget:E:1:130\x07');
+    await pump(tester, onTerminal: onTerminal);
+    expect(
+      shell.commands.single.state,
+      ConversationCommandState.interrupted,
+    );
+    expect(
+      find.byWidgetPredicate(
+        (w) =>
+            w is Semantics &&
+            w.properties.liveRegion == true &&
+            (w.properties.label ?? '').startsWith('Running'),
+      ),
+      findsNothing,
+    );
+  });
+
+  testWidgets('failed exit is coloured as a result, not an app error', (
+    tester,
+  ) async {
+    await pump(tester);
+    expect(shell.submit('false'), isTrue);
+    shell.addOutput('\x1b]777;RS:widget:B:1\x07');
+    shell.addOutput('\x1b]777;RS:widget:E:1:3\x07');
+    await pump(tester);
+    expect(
+      tester.widget<Text>(find.textContaining('Exit 3 \u00b7'))
+          .style
+          ?.color,
+      StatusColors.of(Brightness.light).error,
+    );
+  });
+
+  test('conversation subtitle anchors the launch directory', () {
+    // Own ConversationSession rather than the shared one: disposing a
+    // session cascades into it, and the shared one must survive tearDown.
+    final local = ConversationSession(nonce: 'subtitle');
+    final withDirectory = _LiveSession(
+      id: 'shell-directory',
+      host: session.host,
+      launchPlan: local.launchPlan(workingDirectory: '/home/dev/hk_live'),
+      preferences: const AppPreferences(),
+      connections: services.connections,
+      conversation: local,
+    );
+    expect(withDirectory.subtitle, contains('/home/dev/hk_live'));
+
+    final withoutDirectory = _LiveSession(
+      id: 'shell-plain',
+      host: session.host,
+      launchPlan: local.launchPlan(),
+      preferences: const AppPreferences(),
+      connections: services.connections,
+      conversation: null,
+    );
+    expect(withoutDirectory.subtitle, contains('shell'));
+    expect(withoutDirectory.subtitle, isNot(contains('/home/dev/hk_live')));
+    withDirectory.dispose();
+    withoutDirectory.dispose();
+  });
+
 
   for (final (size, scale, keyboard) in [
     (const Size(375, 667), 1.0, 280.0),

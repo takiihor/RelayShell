@@ -2,8 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:relayshell/features/terminal/accessory_keyboard.dart';
 import 'package:relayshell/features/terminal/terminal_input_modifiers.dart';
+import 'package:relayshell/shared/models/app_preferences.dart';
 
 void main() {
+  test('default mobile rows expose coding-agent essentials', () {
+    final keys = AppPreferences.defaultAccessoryRows.expand((row) => row).toSet();
+
+    expect(keys, containsAll(<String>['ctrl', 'shift', 'tab', 'slash', 'ctrl_c']));
+  });
+
   testWidgets('accessory keys provide a 48dp touch target', (tester) async {
     final modifiers = TerminalInputModifiers();
     addTearDown(modifiers.dispose);

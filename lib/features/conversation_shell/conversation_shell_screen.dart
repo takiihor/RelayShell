@@ -32,10 +32,14 @@ class _ConversationShellScreenState
   TerminalSession? _session;
   int? _historyIndex;
   String _historyDraft = '';
+  TextEditingValue _lastInputValue = TextEditingValue.empty;
+  bool _restoringInput = false;
 
   @override
   void initState() {
     super.initState();
+    _input.addListener(_onInputChanged);
+    _lastInputValue = _input.value;
     _bindSession();
   }
 
@@ -63,10 +67,82 @@ class _ConversationShellScreenState
     });
   }
 
+  /// Mirrors Terminal Mode's modifier behavior for the phone keyboard.
+  ///
+  /// When an interactive process is running and CTRL/ALT/SHIFT is armed from
+  /// the accessory row, the next single character typed on the soft keyboard
+  /// is converted to the real terminal sequence and sent straight to the PTY.
+  /// The character is removed from the composer, so CTRL then `b` really is
+  /// Ctrl+B instead of the letter `b` appearing in the chat box.
+  void _onInputChanged() {
+    if (_restoringInput) return;
+
+    final current = _input.value;
+    final conversation = _conversation;
+    final session = _session;
+    if (conversation == null ||
+        session == null ||
+        !conversation.canSendProcessInput ||
+        !session.inputModifiers.hasActiveModifier) {
+      _lastInputValue = current;
+      return;
+    }
+
+    final inserted = _singleInsertedRune(
+      before: _lastInputValue.text,
+      after: current.text,
+    );
+    if (inserted == null) {
+      // IME commits and paste remain ordinary composer text and deliberately do
+      // not consume an armed modifier, matching TerminalInputModifiers.
+      _lastInputValue = current;
+      return;
+    }
+
+    final sequence = session.inputModifiers.applyTerminalInput(inserted);
+    conversation.sendRawToActive(sequence);
+    _setInputValue(_lastInputValue);
+  }
+
+  static String? _singleInsertedRune({
+    required String before,
+    required String after,
+  }) {
+    if (after.length <= before.length) return null;
+
+    var prefix = 0;
+    final maxPrefix = before.length < after.length ? before.length : after.length;
+    while (prefix < maxPrefix &&
+        before.codeUnitAt(prefix) == after.codeUnitAt(prefix)) {
+      prefix++;
+    }
+
+    var suffix = 0;
+    while (suffix < before.length - prefix &&
+        suffix < after.length - prefix &&
+        before.codeUnitAt(before.length - 1 - suffix) ==
+            after.codeUnitAt(after.length - 1 - suffix)) {
+      suffix++;
+    }
+
+    final end = after.length - suffix;
+    if (end < prefix) return null;
+    final inserted = after.substring(prefix, end);
+    return inserted.runes.length == 1 ? inserted : null;
+  }
+
+  void _setInputValue(TextEditingValue value) {
+    _restoringInput = true;
+    _input.value = value;
+    _lastInputValue = value;
+    _restoringInput = false;
+  }
+
   @override
   void dispose() {
     _conversation?.removeListener(_onConversationChanged);
     _conversation?.dispose();
+    _input.removeListener(_onInputChanged);
     _input.dispose();
     _inputFocus.dispose();
     _scroll.dispose();
@@ -145,7 +221,7 @@ class _ConversationShellScreenState
                   ),
           ),
           AccessoryKeyboard(
-            rows: preferences.accessoryKeyRows,
+            rows: _conversationAccessoryRows(preferences.accessoryKeyRows),
             haptics: preferences.hapticFeedback,
             modifiers: session.inputModifiers,
             onSequence: _handleAccessorySequence,
@@ -164,9 +240,35 @@ class _ConversationShellScreenState
     );
   }
 
+  /// Conversation keeps one compact horizontal row so the transcript remains
+  /// useful above a phone keyboard. User custom keys are preserved, while the
+  /// six coding-agent essentials are guaranteed even for older saved settings.
+  static List<List<String>> _conversationAccessoryRows(
+    List<List<String>> configured,
+  ) {
+    const essentials = ['esc', 'ctrl', 'shift', 'alt', 'tab', 'slash'];
+    final seen = <String>{};
+    final row = <String>[];
+
+    void add(String key) {
+      if (seen.add(key)) row.add(key);
+    }
+
+    for (final key in essentials) {
+      add(key);
+    }
+    for (final configuredRow in configured) {
+      for (final key in configuredRow) {
+        add(key);
+      }
+    }
+    return [row];
+  }
+
   void _submitOrSend() {
     final conversation = _conversation;
-    if (conversation == null || !_session!.isLive) return;
+    final session = _session;
+    if (conversation == null || session == null || !session.isLive) return;
     final text = _input.text;
     if (text.trim().isEmpty) return;
 
@@ -180,7 +282,7 @@ class _ConversationShellScreenState
       return;
     }
 
-    _input.clear();
+    _setInputValue(TextEditingValue.empty);
     _inputFocus.requestFocus();
   }
 
@@ -239,9 +341,11 @@ class _ConversationShellScreenState
     final end = selection.isValid ? selection.end : text.length;
     final next = text.replaceRange(start, end, value);
     final caret = start + value.length;
-    _input.value = TextEditingValue(
-      text: next,
-      selection: TextSelection.collapsed(offset: caret),
+    _setInputValue(
+      TextEditingValue(
+        text: next,
+        selection: TextSelection.collapsed(offset: caret),
+      ),
     );
     _inputFocus.requestFocus();
   }
@@ -249,11 +353,19 @@ class _ConversationShellScreenState
   void _moveComposerCursor(int delta) {
     final selection = _input.selection;
     final current = selection.isValid ? selection.extentOffset : _input.text.length;
-    _setComposerCursor((current + delta).clamp(0, _input.text.length));
+    final candidate = current + delta;
+    final next = candidate < 0
+        ? 0
+        : candidate > _input.text.length
+        ? _input.text.length
+        : candidate;
+    _setComposerCursor(next);
   }
 
   void _setComposerCursor(int offset) {
-    _input.selection = TextSelection.collapsed(offset: offset);
+    _setInputValue(
+      _input.value.copyWith(selection: TextSelection.collapsed(offset: offset)),
+    );
     _inputFocus.requestFocus();
   }
 
@@ -284,9 +396,11 @@ class _ConversationShellScreenState
   }
 
   void _replaceComposer(String value) {
-    _input.value = TextEditingValue(
-      text: value,
-      selection: TextSelection.collapsed(offset: value.length),
+    _setInputValue(
+      TextEditingValue(
+        text: value,
+        selection: TextSelection.collapsed(offset: value.length),
+      ),
     );
     _inputFocus.requestFocus();
   }

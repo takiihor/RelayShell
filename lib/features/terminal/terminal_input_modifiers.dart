@@ -13,6 +13,11 @@ class TerminalInputModifiers extends ChangeNotifier {
   ModifierState get alt => _alt;
   ModifierState get shift => _shift;
 
+  bool get hasActiveModifier =>
+      _control != ModifierState.off ||
+      _alt != ModifierState.off ||
+      _shift != ModifierState.off;
+
   void tapControl() {
     _control = _tap(_control);
     notifyListeners();
@@ -59,10 +64,7 @@ class TerminalInputModifiers extends ChangeNotifier {
   /// Multi-character input is a paste or IME commit, not a single keypress, so
   /// it passes through and leaves armed modifiers waiting for the next key.
   String applyTerminalInput(String input) {
-    if ((_control != ModifierState.off ||
-            _alt != ModifierState.off ||
-            _shift != ModifierState.off) &&
-        input.runes.length != 1) {
+    if (hasActiveModifier && input.runes.length != 1) {
       return input;
     }
     return _apply(input);

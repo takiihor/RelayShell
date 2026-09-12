@@ -6,6 +6,11 @@ The product model is `Phone → Computer → Project → Session → Action`. A 
 client opens a blank terminal; this app opens what you actually wanted to do —
 resume a session, enter a project, launch a CLI, run a saved command, browse files.
 
+Conversation Mode is being developed as a mobile-first command/output view over the
+same SSH PTY used by Terminal Mode. It is not an AI chatbot: commands go directly to
+the remote shell, interactive tools such as Herdr can receive stdin and terminal
+control keys, and normal operation consumes no LLM tokens. See [design.md](design.md).
+
 ## Status
 
 | Check | Result |

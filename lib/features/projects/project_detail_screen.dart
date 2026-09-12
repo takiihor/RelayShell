@@ -160,6 +160,17 @@ class _ProjectDetailView extends ConsumerWidget {
                       ),
                     ),
                     const SizedBox(height: 14),
+                    if (host != null && host.platform == RemotePlatform.posix)
+                      OutlinedButton.icon(
+                        onPressed: () => openConversationShell(
+                          context,
+                          ref,
+                          host,
+                          project: project,
+                        ),
+                        icon: const Icon(Icons.chat_bubble_outline),
+                        label: Text(l10n.conversationOpen),
+                      ),
                     FilledButton.icon(
                       onPressed: () =>
                           openProjectTerminal(context, ref, project),

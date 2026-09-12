@@ -15,6 +15,7 @@ import 'terminal_providers.dart';
 import 'terminal_session.dart';
 import 'touch_selection_menu_detector.dart';
 import 'two_finger_swipe_detector.dart';
+import '../conversation_shell/conversation_view.dart';
 
 /// The interactive terminal (SPEC 10).
 ///
@@ -36,6 +37,7 @@ class _TerminalScreenState extends ConsumerState<TerminalScreen> {
   final ScrollController _scrollController = ScrollController();
   bool _wakeLockHeld = false;
   bool _searching = false;
+  bool _terminalMode = false;
 
   @override
   void initState() {
@@ -122,6 +124,14 @@ class _TerminalScreenState extends ConsumerState<TerminalScreen> {
         session: session,
         onSearch: () => setState(() => _searching = !_searching),
         searching: _searching,
+        onMode: session.conversation == null
+            ? null
+            : () => setState(() {
+                _terminalMode = !_terminalMode;
+                _searching = false;
+                _focusNode.unfocus();
+              }),
+        terminalMode: _terminalMode,
       ),
       body: Column(
         children: [
@@ -136,52 +146,60 @@ class _TerminalScreenState extends ConsumerState<TerminalScreen> {
               onClose: () => setState(() => _searching = false),
             ),
           Expanded(
-            child: TwoFingerSwipeDetector(
-              onSwipe: _switchTerminal,
-              child: TouchSelectionMenuDetector(
-                onLongPressEnd: () => _showSelectionMenu(
-                  context,
-                  session,
-                  requireSelection: true,
-                ),
-                child: TerminalView(
-                  session.terminal,
-                  controller: session.controller,
-                  scrollController: _scrollController,
-                  focusNode: _focusNode,
-                  autofocus: true,
-                  theme: namedTheme.theme,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 6,
-                    vertical: 4,
+            child: session.conversation != null && !_terminalMode
+                ? ConversationView(
+                    key: ValueKey(session.id),
+                    session: session,
+                    onTerminal: () => setState(() => _terminalMode = true),
+                  )
+                : TwoFingerSwipeDetector(
+                    onSwipe: _switchTerminal,
+                    child: TouchSelectionMenuDetector(
+                      onLongPressEnd: () => _showSelectionMenu(
+                        context,
+                        session,
+                        requireSelection: true,
+                      ),
+                      child: TerminalView(
+                        session.terminal,
+                        controller: session.controller,
+                        scrollController: _scrollController,
+                        focusNode: _focusNode,
+                        autofocus: true,
+                        theme: namedTheme.theme,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 4,
+                        ),
+                        textStyle: TerminalStyle(
+                          fontSize: preferences.terminalFontSize,
+                          fontFamily: preferences.terminalFontFamily,
+                          fontFamilyFallback: TerminalFonts.fallbacks,
+                        ),
+                        cursorType: switch (preferences.cursorStyle) {
+                          TerminalCursorStyle.block => TerminalCursorType.block,
+                          TerminalCursorStyle.underline =>
+                            TerminalCursorType.underline,
+                          TerminalCursorStyle.bar =>
+                            TerminalCursorType.verticalBar,
+                        },
+                        // Mobile IMEs often do not emit a hardware delete event, so
+                        // the workaround is on by default here (SPEC 10.1).
+                        deleteDetection: true,
+                        onSecondaryTapDown: (details, offset) =>
+                            _showSelectionMenu(context, session),
+                        readOnly: !session.isLive,
+                      ),
+                    ),
                   ),
-                  textStyle: TerminalStyle(
-                    fontSize: preferences.terminalFontSize,
-                    fontFamily: preferences.terminalFontFamily,
-                    fontFamilyFallback: TerminalFonts.fallbacks,
-                  ),
-                  cursorType: switch (preferences.cursorStyle) {
-                    TerminalCursorStyle.block => TerminalCursorType.block,
-                    TerminalCursorStyle.underline =>
-                      TerminalCursorType.underline,
-                    TerminalCursorStyle.bar => TerminalCursorType.verticalBar,
-                  },
-                  // Mobile IMEs often do not emit a hardware delete event, so
-                  // the workaround is on by default here (SPEC 10.1).
-                  deleteDetection: true,
-                  onSecondaryTapDown: (details, offset) =>
-                      _showSelectionMenu(context, session),
-                  readOnly: !session.isLive,
-                ),
-              ),
+          ),
+          if (session.conversation == null || _terminalMode)
+            AccessoryKeyboard(
+              rows: preferences.accessoryKeyRows,
+              haptics: preferences.hapticFeedback,
+              modifiers: session.inputModifiers,
+              onSequence: session.sendRaw,
             ),
-          ),
-          AccessoryKeyboard(
-            rows: preferences.accessoryKeyRows,
-            haptics: preferences.hapticFeedback,
-            modifiers: session.inputModifiers,
-            onSequence: session.sendRaw,
-          ),
         ],
       ),
     );
@@ -316,11 +334,15 @@ class _TerminalAppBar extends ConsumerWidget implements PreferredSizeWidget {
     required this.session,
     required this.onSearch,
     required this.searching,
+    this.onMode,
+    this.terminalMode = true,
   });
 
   final TerminalSession session;
   final VoidCallback onSearch;
   final bool searching;
+  final VoidCallback? onMode;
+  final bool terminalMode;
 
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
@@ -361,11 +383,20 @@ class _TerminalAppBar extends ConsumerWidget implements PreferredSizeWidget {
         ),
       ),
       actions: [
-        IconButton(
-          icon: Icon(searching ? Icons.search_off : Icons.search),
-          tooltip: l10n.terminalSearch,
-          onPressed: onSearch,
-        ),
+        if (onMode != null)
+          IconButton(
+            onPressed: onMode,
+            tooltip: terminalMode ? l10n.conversationTitle : l10n.terminalTitle,
+            icon: Icon(
+              terminalMode ? Icons.chat_bubble_outline : Icons.terminal,
+            ),
+          ),
+        if (onMode == null || terminalMode)
+          IconButton(
+            icon: Icon(searching ? Icons.search_off : Icons.search),
+            tooltip: l10n.terminalSearch,
+            onPressed: onSearch,
+          ),
         PopupMenuButton<String>(
           onSelected: (value) => _onMenu(context, ref, value),
           itemBuilder: (context) => [
@@ -381,10 +412,7 @@ class _TerminalAppBar extends ConsumerWidget implements PreferredSizeWidget {
             ),
             PopupMenuItem(value: 'font', child: Text(l10n.terminalFontSize)),
             if (session.isPersistent)
-              PopupMenuItem(
-                value: 'detach',
-                child: Text(l10n.terminalDetach),
-              ),
+              PopupMenuItem(value: 'detach', child: Text(l10n.terminalDetach)),
             PopupMenuItem(value: 'close', child: Text(l10n.actionDisconnect)),
           ],
         ),

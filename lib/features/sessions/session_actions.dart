@@ -13,6 +13,22 @@ import '../hosts/host_key_dialog.dart';
 import '../terminal/terminal_providers.dart';
 import 'session_launcher.dart';
 
+Future<void> openConversationShell(
+  BuildContext context,
+  WidgetRef ref,
+  Host host, {
+  Project? project,
+}) => _launch(context, ref, () async {
+  final session = await ref
+      .read(terminalManagerProvider)
+      .openConversation(
+        host: host,
+        project: project,
+        preferences: ref.read(preferencesProvider),
+      );
+  return session.id;
+});
+
 /// Opens a terminal on [host] and navigates to it.
 Future<void> openHostTerminal(
   BuildContext context,

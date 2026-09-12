@@ -61,5 +61,28 @@ networks, external keyboards, or a real SSH daemon.
 - [ ] Verify the new launcher icon, RelayShell display name, version, privacy
   policy link, and store screenshots/descriptions match the candidate.
 
+## Conversation Shell (release gate)
+
+- [ ] On Android and iOS, open Shell from a computer and project. Run `cd`,
+  `export`, a function, an alias and environment activation across separate cards.
+- [ ] Enter multiline text with CJK/emoji, paste shell punctuation, and compose
+  text using an IME. Run must not submit uncommitted IME composition. Verify
+  history preserves the draft and running commands cannot accept another submission.
+- [ ] Run streaming logs and Stop them. Confirm interruption returns a prompt
+  without closing the shared SSH connection or disrupting another terminal.
+- [ ] Open an editor or password prompt and switch to Terminal. Confirm the same
+  process continues and the draft survives switching views. After terminal input,
+  confirm the conversation requests a fresh shell instead of guessing boundaries.
+- [ ] Verify portrait, landscape, keyboard insets, large text, TalkBack/VoiceOver,
+  light/dark mode, copy/select/share (including iPad share anchoring), and saved
+  command editing. Scroll back while output streams, then use Latest output.
+- [ ] Exceed the output/card limits and verify visible truncation and responsive
+  scrolling. Clear completed cards while a command runs.
+- [ ] Lose the network during a command, reconnect, and verify an unknown result,
+  a fresh direct shell and no replay. Do not imply tmux/Herdr resume support here.
+- [ ] Test a host without Bash, a missing project directory, and commands that
+  replace the shell or change `PROMPT_COMMAND`; verify Terminal remains reachable
+  and no successful command result is fabricated.
+
 Record the device model, OS version, SSH server, network type, and outcome for
 each failed or exceptional case before approving a release.

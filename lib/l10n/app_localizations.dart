@@ -2966,6 +2966,162 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{1 hour ago} other{{count} hours ago}}'**
   String timeHoursAgo(int count);
 
+  /// No description provided for @conversationOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Shell'**
+  String get conversationOpen;
+
+  /// No description provided for @conversationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Conversation Shell'**
+  String get conversationTitle;
+
+  /// No description provided for @conversationIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Run real commands and read their output here. This is a dedicated Bash shell: directory changes, exports and activated environments stay in this session.\n\nUse Terminal for passwords, editors and interactive tools. Direct sessions start fresh after reconnecting. Recent commands and output stay in memory only.'**
+  String get conversationIntro;
+
+  /// No description provided for @conversationCommand.
+  ///
+  /// In en, this message translates to:
+  /// **'Shell command'**
+  String get conversationCommand;
+
+  /// No description provided for @conversationOutput.
+  ///
+  /// In en, this message translates to:
+  /// **'Shell output'**
+  String get conversationOutput;
+
+  /// No description provided for @conversationConnecting.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for the shell…'**
+  String get conversationConnecting;
+
+  /// No description provided for @conversationUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Shell framing is unavailable. Open Terminal to inspect or reconnect for a fresh shell.'**
+  String get conversationUnavailable;
+
+  /// No description provided for @conversationRunningHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Running. You can draft the next command. Use Terminal if input is needed.'**
+  String get conversationRunningHint;
+
+  /// No description provided for @conversationRunning.
+  ///
+  /// In en, this message translates to:
+  /// **'Running'**
+  String get conversationRunning;
+
+  /// No description provided for @conversationUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Session lost · result unknown'**
+  String get conversationUnknown;
+
+  /// No description provided for @conversationInterrupted.
+  ///
+  /// In en, this message translates to:
+  /// **'Interrupted'**
+  String get conversationInterrupted;
+
+  /// No description provided for @conversationExit.
+  ///
+  /// In en, this message translates to:
+  /// **'Exit {code}'**
+  String conversationExit(int code);
+
+  /// No description provided for @conversationInteractive.
+  ///
+  /// In en, this message translates to:
+  /// **'Interactive program detected. Continue in Terminal.'**
+  String get conversationInteractive;
+
+  /// No description provided for @conversationTruncated.
+  ///
+  /// In en, this message translates to:
+  /// **'Older output removed. Showing the most recent 32K characters.'**
+  String get conversationTruncated;
+
+  /// No description provided for @conversationLatest.
+  ///
+  /// In en, this message translates to:
+  /// **'Latest output'**
+  String get conversationLatest;
+
+  /// No description provided for @conversationPrevious.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous command'**
+  String get conversationPrevious;
+
+  /// No description provided for @conversationNext.
+  ///
+  /// In en, this message translates to:
+  /// **'Next command or draft'**
+  String get conversationNext;
+
+  /// No description provided for @conversationClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear completed cards'**
+  String get conversationClear;
+
+  /// No description provided for @conversationActions.
+  ///
+  /// In en, this message translates to:
+  /// **'Command actions'**
+  String get conversationActions;
+
+  /// No description provided for @conversationEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit command'**
+  String get conversationEdit;
+
+  /// No description provided for @conversationRunAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Run again'**
+  String get conversationRunAgain;
+
+  /// No description provided for @conversationCopyOutput.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy output'**
+  String get conversationCopyOutput;
+
+  /// No description provided for @conversationCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Copied to clipboard'**
+  String get conversationCopied;
+
+  /// No description provided for @conversationInputLimit.
+  ///
+  /// In en, this message translates to:
+  /// **'Shorten the command or remove unsupported control characters.'**
+  String get conversationInputLimit;
+
+  /// No description provided for @conversationRestarted.
+  ///
+  /// In en, this message translates to:
+  /// **'Fresh shell after reconnect. Earlier cards belong to the previous shell.'**
+  String get conversationRestarted;
+
+  /// No description provided for @conversationStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'{status} · {seconds}s'**
+  String conversationStatus(String status, String seconds);
+
   /// No description provided for @timeYesterday.
   ///
   /// In en, this message translates to:

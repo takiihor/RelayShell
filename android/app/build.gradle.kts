@@ -29,7 +29,13 @@ android {
     // Pinned rather than `flutter.compileSdkVersion` so the build does not
     // depend on whichever SDK platform happens to be installed. Raise this
     // deliberately, together with a device-test pass.
-    compileSdk = 37
+    // SDK Manager publishes this platform as android-37.0, so pin the minor
+    // level explicitly rather than looking for the absent android-37 package.
+    compileSdk {
+        version = release(37) {
+            minorApiLevel = 0
+        }
+    }
     ndkVersion = flutter.ndkVersion
 
     compileOptions {

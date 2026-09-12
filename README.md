@@ -18,7 +18,7 @@ resume a session, enter a project, launch a CLI, run a saved command, browse fil
 ## Requirements
 
 - Flutter 3.47+ (Dart 3.13+)
-- Android SDK platform 37 (`compileSdk` is pinned to 37 in `android/app/build.gradle.kts`)
+- Android SDK platform 37.0 (`compileSdk` is pinned in `android/app/build.gradle.kts`)
 - Xcode for iOS builds
 
 ## Running
@@ -52,6 +52,45 @@ outside this repository; losing it prevents future Android updates. Confirm
 that `com.relayshell.relayshell` is registered to the intended Play developer
 account before the first upload, because an Android application ID cannot be
 changed after publication.
+
+## Conversation Shell
+
+On a POSIX computer or project, choose **Open Shell** to use the mobile command
+composer. Enter supports multiple lines; tap Run (or Ctrl/Command+Enter on an
+external keyboard) to submit. Commands run in one
+live Bash PTY, so `cd`, `export`, functions, aliases and sourced environments carry
+over to the next command. No AI service or separate per-command SSH channel is used.
+
+- Draft the next command while output streams; it cannot run until the current
+  command completes. History buttons restore earlier commands and your draft.
+- Each card shows its exit status and duration. Its menu supports copy, edit,
+  rerun and saving through the existing command editor. Output is selectable,
+  copyable and shareable.
+- Stop sends Ctrl+C. For passwords, editors, pagers and other interactive tools,
+  switch to Terminal: it displays the **same running PTY**, without restarting work.
+- Reading older output pauses automatic scrolling; Latest output returns to the
+  live result. Input controls adapt to the keyboard and landscape layouts.
+
+This first implementation requires Bash and uses a **direct connection**, not a
+tmux/Herdr session. Reconnection starts a fresh shell; an interrupted connection
+leaves the running result unknown and never replays commands. After typing in
+Terminal, conversation submission stays disabled until a fresh shell is opened
+because terminal input may bypass command framing. Inspect ongoing work before
+using Reconnect. Existing persistent Terminal sessions remain the choice for work
+that must survive a lost mobile connection.
+
+The dedicated shell inherits the SSH environment but does not automatically source
+Bash startup files. You can source an environment explicitly. Commands that replace
+the shell (`exec`), disable its prompt hook, or enable incompatible shell options
+may require Terminal. Conversation output is plain text, not a full TUI renderer.
+Use foreground commands: background jobs can write output outside their card's
+boundaries, so use Terminal to inspect those jobs.
+
+Transcripts and drafts are memory-only and disappear when a tab closes or the app
+process exits. At most 50 cards and the last 32K UTF-16 characters of output per
+card are retained; truncation is labeled. Input is limited to 16K characters.
+Clear removes completed cards. Saving a command and sharing/copying output are
+explicit user actions; the shell's automatic history file is disabled.
 
 ## Architecture
 

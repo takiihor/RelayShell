@@ -1778,6 +1778,29 @@ The current architecture should not prevent future expansion, but it should not 
 
 # 48. Product Definition
 
+## Conversation Shell implementation scope
+
+The phone interface also provides **Open Shell** on POSIX computers and projects,
+following `design.md`. The initial implementation uses a dedicated direct Bash
+PTY and the existing connection, credential, host-verification and terminal
+infrastructure. It is an additional explicit entry point; persistent tmux/Herdr
+sessions and non-POSIX hosts continue to use Terminal Mode.
+
+Conversation commands must execute serially in the same shell, stream bounded
+plain-text output, retain multiline drafts, and show confirmed exit status or an
+unknown result after session loss. Per-session nonce markers define command
+boundaries independently of the visible prompt. Switching to Terminal must use
+the same PTY without replay. Unframed terminal input disables further conversation
+submission until a fresh shell is opened. Reconnection never replays a command.
+
+Retain at most 50 command cards and 32K UTF-16 output characters per card in
+memory, with truncation visible. Do not persist transcripts or automatically
+write Bash history. Command saving, clipboard copying and sharing are explicit
+actions. Physical-device checks in `docs/RELEASE_CHECKLIST.md` remain required
+before publishing this feature.
+
+## Product evaluation
+
 RelayShell should be judged by this question:
 
 > Can a user take out a phone, reach the correct computer/project/session, perform useful development or server work with minimal typing, put the phone away, and later continue safely?

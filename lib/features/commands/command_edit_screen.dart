@@ -17,11 +17,13 @@ class CommandEditScreen extends ConsumerStatefulWidget {
     this.commandId,
     this.initialHostId,
     this.initialProjectId,
+    this.initialCommand,
   });
 
   final String? commandId;
   final String? initialHostId;
   final String? initialProjectId;
+  final String? initialCommand;
 
   @override
   ConsumerState<CommandEditScreen> createState() => _CommandEditScreenState();
@@ -58,6 +60,7 @@ class _CommandEditScreenState extends ConsumerState<CommandEditScreen> {
     }
 
     if (_isNew) {
+      _command.text = widget.initialCommand ?? '';
       _loaded = true;
     } else {
       _load();

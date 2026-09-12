@@ -13,6 +13,7 @@ import '../../core/ssh/ssh_connection.dart';
 import '../../core/ssh/ssh_failure.dart';
 import '../../shared/models/models.dart';
 import 'terminal_input_modifiers.dart';
+import '../conversation_shell/conversation_session.dart';
 
 /// Lifecycle of one terminal tab.
 enum TerminalSessionState {
@@ -47,6 +48,7 @@ class TerminalSession extends ChangeNotifier {
     required this.connections,
     this.project,
     this.sessionRecordId,
+    this.conversation,
     String? title,
   }) : _title = title ?? host.name,
        terminal = Terminal(
@@ -59,6 +61,7 @@ class TerminalSession extends ChangeNotifier {
   final Project? project;
   final SessionLaunchPlan launchPlan;
   final ConnectionManager connections;
+  final ConversationSession? conversation;
 
   /// The local session record this terminal resumes or created, if any.
   final String? sessionRecordId;
@@ -168,14 +171,33 @@ class TerminalSession extends ChangeNotifier {
     }
 
     _shell = shell;
+    conversation?.connecting();
+    conversation?.send = (data) {
+      _shell?.write(Uint8List.fromList(utf8.encode(data)));
+    };
+    // Decode incrementally: a UTF-8 character can span SSH packets.
+    final stdoutDecoder = const Utf8Decoder(allowMalformed: true)
+        .startChunkedConversion(
+          StringConversionSink.fromStringSink(
+            _TerminalOutputSink(_writeToTerminal),
+          ),
+        );
+    final stderrDecoder = const Utf8Decoder(allowMalformed: true)
+        .startChunkedConversion(
+          StringConversionSink.fromStringSink(
+            _TerminalOutputSink(_writeToTerminal),
+          ),
+        );
 
     _stdout = shell.stdout.listen(
-      _writeToTerminal,
+      stdoutDecoder.add,
+      onDone: stdoutDecoder.close,
       onError: (_) {},
       cancelOnError: false,
     );
     _stderr = shell.stderr.listen(
-      _writeToTerminal,
+      stderrDecoder.add,
+      onDone: stderrDecoder.close,
       onError: (_) {},
       cancelOnError: false,
     );
@@ -183,6 +205,7 @@ class TerminalSession extends ChangeNotifier {
     terminal.onOutput = (data) {
       final session = _shell;
       if (session == null) return;
+      conversation?.terminalInput();
       final output = inputModifiers.applyTerminalInput(data);
       session.write(Uint8List.fromList(utf8.encode(output)));
     };
@@ -207,8 +230,9 @@ class TerminalSession extends ChangeNotifier {
     }
   }
 
-  void _writeToTerminal(Uint8List data) {
-    terminal.write(const Utf8Decoder(allowMalformed: true).convert(data));
+  void _writeToTerminal(String data) {
+    terminal.write(data);
+    conversation?.addOutput(data);
   }
 
   Future<void> _watchShellExit(SSHSession shell) async {
@@ -309,6 +333,7 @@ class TerminalSession extends ChangeNotifier {
   void sendText(String text, {bool submit = true}) {
     final session = _shell;
     if (session == null) return;
+    conversation?.terminalInput();
     final payload = submit && !text.endsWith('\n') ? '$text\n' : text;
     session.write(Uint8List.fromList(utf8.encode(payload)));
   }
@@ -317,6 +342,7 @@ class TerminalSession extends ChangeNotifier {
   void sendRaw(String sequence) {
     final session = _shell;
     if (session == null) return;
+    conversation?.terminalInput();
     session.write(Uint8List.fromList(utf8.encode(sequence)));
   }
 
@@ -364,6 +390,11 @@ class TerminalSession extends ChangeNotifier {
   void _setState(TerminalSessionState next) {
     if (_state == next) return;
     _state = next;
+    if (next == TerminalSessionState.disconnected ||
+        next == TerminalSessionState.failed ||
+        next == TerminalSessionState.ended) {
+      conversation?.disconnected();
+    }
     notifyListeners();
   }
 
@@ -383,6 +414,21 @@ class TerminalSession extends ChangeNotifier {
     _shell?.close();
     controller.dispose();
     inputModifiers.dispose();
+    conversation?.dispose();
     super.dispose();
   }
+}
+
+class _TerminalOutputSink implements StringSink {
+  _TerminalOutputSink(this.onData);
+  final void Function(String) onData;
+  @override
+  void write(Object? object) => onData('$object');
+  @override
+  void writeAll(Iterable<dynamic> objects, [String separator = '']) =>
+      onData(objects.join(separator));
+  @override
+  void writeCharCode(int charCode) => onData(String.fromCharCode(charCode));
+  @override
+  void writeln([Object? object = '']) => onData('$object\n');
 }

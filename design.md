@@ -5,6 +5,14 @@
 **Primary stack:** Flutter  
 **Related specification:** `SPEC.md`
 
+**Implementation update:** The first Conversation Shell is available from POSIX
+computer/project pages. It uses a dedicated direct Bash PTY with nonce framing,
+bounded memory-only cards, a mobile composer and same-PTY Terminal handoff.
+Persistent multiplexer framing, PowerShell integration, disk transcript retention
+and physical-device validation remain future work. See README for current limits
+and the release checklist for required device checks; the broader design below
+remains the target, not a claim that every phase has shipped.
+
 ---
 
 ## 1. Product Direction

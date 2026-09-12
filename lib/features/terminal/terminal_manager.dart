@@ -10,6 +10,7 @@ import '../../core/ssh/connection_manager.dart';
 import '../../core/ssh/multiplexer_service.dart';
 import '../../shared/models/models.dart';
 import 'terminal_session.dart';
+import '../conversation_shell/conversation_session.dart';
 
 /// Raised instead of silently terminating a live shell when every terminal
 /// slot is in use. The user can explicitly close the tab whose work is done.
@@ -141,6 +142,39 @@ class TerminalManager extends ChangeNotifier {
     return next;
   }
 
+  /// Opens or focuses a dedicated conversation shell in this host/project.
+  Future<TerminalSession> openConversation({
+    required Host host,
+    required AppPreferences preferences,
+    Project? project,
+  }) async {
+    if (host.platform != RemotePlatform.posix) {
+      throw ArgumentError(
+        'Conversation shells require a POSIX host with Bash.',
+      );
+    }
+    for (final tab in _tabs) {
+      if (tab.conversation != null &&
+          tab.host.id == host.id &&
+          tab.project?.id == project?.id &&
+          (tab.isLive || tab.state == TerminalSessionState.starting)) {
+        setActive(tab.id);
+        return tab;
+      }
+    }
+    final conversation = ConversationSession();
+    return open(
+      host: host,
+      project: project,
+      preferences: preferences,
+      title: project?.name ?? host.name,
+      plan: conversation.launchPlan(
+        workingDirectory: project?.remotePath ?? host.startupDirectory,
+      ),
+      conversation: conversation,
+    );
+  }
+
   /// Opens a terminal and starts it.
   Future<TerminalSession> open({
     required Host host,
@@ -149,6 +183,7 @@ class TerminalManager extends ChangeNotifier {
     Project? project,
     String? title,
     String? sessionRecordId,
+    ConversationSession? conversation,
   }) async {
     // Avoid yielding before this tab is registered. A second Connect press
     // must be able to find the tab while its SSH connection is starting.
@@ -165,6 +200,7 @@ class TerminalManager extends ChangeNotifier {
       connections: connections,
       sessionRecordId: sessionRecordId,
       title: title,
+      conversation: conversation,
     );
 
     session.addListener(notifyListeners);

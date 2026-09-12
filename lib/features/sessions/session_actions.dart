@@ -32,18 +32,20 @@ Future<void> openHostTerminal(
   });
 }
 
-/// Opens the mobile-first Conversation Mode over a fresh interactive PTY.
+/// Opens the mobile-first Conversation Mode over a fresh direct shell PTY.
 ///
-/// A normal terminal tab may currently be inside vim/htop/Codex, so reusing it
-/// would risk sending the framing protocol into a TUI. The new tab still shares
-/// the host's SSH transport and, in persistent mode, gets its own managed
-/// multiplexer session. Terminal Mode can then open this exact PTY if needed.
+/// Conversation framing requires a known shell prompt. A host whose persistent
+/// backend is Herdr would otherwise launch straight into the Herdr TUI and the
+/// framing protocol would be typed into that interface. Conversation therefore
+/// always starts from an isolated direct shell. The user can then run `herdr`,
+/// Codex, Claude, Pi or another interactive command inside it; once that process
+/// is active, the Conversation composer and accessory keyboard talk directly to
+/// the same foreground PTY.
 Future<void> openHostConversation(
   BuildContext context,
   WidgetRef ref,
-  Host host, {
-  SessionMode? mode,
-}) async {
+  Host host,
+) async {
   await _launch(
     context,
     ref,
@@ -53,7 +55,7 @@ Future<void> openHostConversation(
           .openAdditionalHostTerminal(
             host: host,
             preferences: ref.read(preferencesProvider),
-            mode: mode,
+            mode: SessionMode.direct,
           );
       return session.id;
     },
@@ -80,7 +82,8 @@ Future<void> openAdditionalHostTerminal(
   });
 }
 
-/// Opens [project] at its remote path, optionally running an action.
+/// Opens [project] at its remote path (SPEC 12.3, 40.3), optionally running an
+/// action.
 Future<void> openProjectTerminal(
   BuildContext context,
   WidgetRef ref,
@@ -117,19 +120,18 @@ Future<void> openProjectTerminal(
   });
 }
 
-/// Opens a project directly in Conversation Mode while preserving its working
-/// directory but isolating it from a configured default tmux/Herdr session.
+/// Opens a project directly in Conversation Mode at its configured directory.
 ///
-/// That default session may legitimately be running Codex, vim, or another TUI;
-/// Conversation framing must start in a clean shell instead. Clearing the name
-/// only on this in-memory copy makes SessionLauncher allocate a separate managed
-/// session without changing the saved Project configuration.
+/// As with host Conversation Mode, this intentionally uses a direct shell even
+/// when the project's default is tmux or Herdr. A configured persistent session
+/// may already be running a full-screen agent/TUI, which is not a safe place to
+/// inject Conversation framing. Interactive tools launched after the clean shell
+/// opens still receive stdin and terminal shortcuts through the same PTY.
 Future<void> openProjectConversation(
   BuildContext context,
   WidgetRef ref,
-  Project project, {
-  SessionMode? mode,
-}) async {
+  Project project,
+) async {
   final host = await ref.read(hostsRepositoryProvider).byId(project.hostId);
   if (host == null) {
     if (context.mounted) {
@@ -143,7 +145,6 @@ Future<void> openProjectConversation(
   }
 
   if (!context.mounted) return;
-  final isolatedProject = project.copyWith(defaultTmuxName: null);
   await _launch(
     context,
     ref,
@@ -151,10 +152,10 @@ Future<void> openProjectConversation(
       final session = await ref
           .read(sessionLauncherProvider)
           .openProject(
-            project: isolatedProject,
+            project: project,
             host: host,
             preferences: ref.read(preferencesProvider),
-            mode: mode,
+            mode: SessionMode.direct,
           );
       return session.id;
     },

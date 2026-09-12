@@ -225,6 +225,7 @@ class _ConversationShellScreenState
             haptics: preferences.hapticFeedback,
             modifiers: session.inputModifiers,
             onSequence: _handleAccessorySequence,
+            safeAreaBottom: false,
           ),
           _Composer(
             controller: _input,

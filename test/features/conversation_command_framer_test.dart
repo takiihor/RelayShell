@@ -9,8 +9,8 @@ void main() {
 
   test('interactive child reads user stdin instead of RelayShell footer', () async {
     final process = await Process.start('/bin/sh', const []);
-    addTearDown(() {
-      process.stdin.close();
+    addTearDown(() async {
+      await process.stdin.close();
       process.kill();
     });
 
@@ -55,8 +55,8 @@ void main() {
 
   test('framed commands preserve shell directory and environment state', () async {
     final process = await Process.start('/bin/sh', const []);
-    addTearDown(() {
-      process.stdin.close();
+    addTearDown(() async {
+      await process.stdin.close();
       process.kill();
     });
 

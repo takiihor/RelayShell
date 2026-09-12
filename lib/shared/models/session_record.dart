@@ -22,6 +22,7 @@ class SessionRecord {
     this.workingDirectory,
     this.launchCommandId,
     this.launchCommand,
+    this.herdrTerminalId,
   });
 
   final String id;
@@ -30,6 +31,7 @@ class SessionRecord {
 
   /// Null for direct sessions; set for managed tmux sessions.
   final String? tmuxSessionName;
+  final String? herdrTerminalId;
 
   final String displayName;
   final SessionMode mode;
@@ -56,9 +58,13 @@ class SessionRecord {
     Object? workingDirectory = _unset,
     Object? launchCommandId = _unset,
     Object? launchCommand = _unset,
+    Object? herdrTerminalId = _unset,
     DateTime? lastUsedAt,
   }) => SessionRecord(
     id: id,
+    herdrTerminalId: herdrTerminalId == _unset
+        ? this.herdrTerminalId
+        : herdrTerminalId as String?,
     hostId: hostId,
     projectId: projectId == _unset ? this.projectId : projectId as String?,
     tmuxSessionName: tmuxSessionName == _unset
@@ -84,6 +90,7 @@ class SessionRecord {
     'host_id': hostId,
     'project_id': projectId,
     'tmux_session_name': tmuxSessionName,
+    'herdr_terminal_id': herdrTerminalId,
     'display_name': displayName,
     'mode': mode.storageValue,
     'working_directory': workingDirectory,
@@ -98,6 +105,7 @@ class SessionRecord {
     hostId: row['host_id']! as String,
     projectId: row['project_id'] as String?,
     tmuxSessionName: row['tmux_session_name'] as String?,
+    herdrTerminalId: row['herdr_terminal_id'] as String?,
     displayName: row['display_name']! as String,
     mode: SessionMode.fromStorage(row['mode'] as String?),
     workingDirectory: row['working_directory'] as String?,
@@ -114,6 +122,7 @@ class SessionRecord {
     'host_id': hostId,
     'project_id': projectId,
     'tmux_session_name': tmuxSessionName,
+    'herdr_terminal_id': herdrTerminalId,
     'display_name': displayName,
     'mode': mode.storageValue,
     'working_directory': workingDirectory,

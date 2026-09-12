@@ -82,9 +82,12 @@ class TerminalManager extends ChangeNotifier {
   TerminalSession? findAttached({
     required String hostId,
     required String tmuxSessionName,
+    String? herdrTerminalId,
   }) {
     for (final tab in _tabs) {
-      if (tab.host.id == hostId && tab.tmuxSessionName == tmuxSessionName) {
+      if (tab.host.id == hostId &&
+          tab.tmuxSessionName == tmuxSessionName &&
+          tab.launchPlan.herdrTerminalId == herdrTerminalId) {
         return tab;
       }
     }
@@ -109,6 +112,7 @@ class TerminalManager extends ChangeNotifier {
           openedPlan.shellCommand != plan.shellCommand ||
           openedPlan.initialInput != plan.initialInput ||
           openedPlan.tmuxSessionName != plan.tmuxSessionName ||
+          openedPlan.herdrTerminalId != plan.herdrTerminalId ||
           openedPlan.workingDirectory != plan.workingDirectory) {
         continue;
       }
@@ -233,6 +237,7 @@ class TerminalManager extends ChangeNotifier {
       hostId: session.host.id,
       projectId: session.project?.id,
       tmuxSessionName: tmuxName,
+      herdrTerminalId: session.launchPlan.herdrTerminalId,
       displayName: session.title,
       mode: session.launchPlan.mode,
       workingDirectory: session.launchPlan.workingDirectory,
@@ -248,6 +253,7 @@ class TerminalManager extends ChangeNotifier {
     final existing = await sessions.byTmuxName(
       hostId: session.host.id,
       tmuxSessionName: tmuxName,
+      herdrTerminalId: session.launchPlan.herdrTerminalId,
     );
     if (existing != null) {
       await sessions.touch(existing.id);

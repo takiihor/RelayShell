@@ -80,6 +80,21 @@ networks, external keyboards, or a real SSH daemon.
   scrolling. Clear completed cards while a command runs.
 - [ ] Lose the network during a command, reconnect, and verify an unknown result,
   a fresh direct shell and no replay. Do not imply tmux/Herdr resume support here.
+
+### Herdr native panes
+
+- [ ] On a physical phone, choose a named Herdr session/pane, send a multiline
+  Unicode prompt to a real coding agent, and verify Enter remains a newline.
+- [ ] Verify raw keyboard, Ctrl+C, Escape, remote scroll and keyboard resize.
+- [ ] Drop Wi-Fi during remote work and reconnect to the same stable terminal;
+  verify no prompt is replayed. Repeat after app restart via Continue.
+- [ ] Verify a competing controller is refused without takeover; detach keeps
+  the pane running. Forget must not offer to kill the entire Herdr session.
+- Automated coverage: NDJSON framing/ordering/bounds; composer IME, uncertain
+  delivery, draft preservation and small-screen layouts; schema migration and
+  distinct pane shortcuts. The opt-in `herdr_live_test.dart` executes production
+  bridge commands against a disposable local Herdr session (not a phone or an
+  SSH transport test). Never point it at a daily-use session.
 - [ ] Test a host without Bash, a missing project directory, and commands that
   replace the shell or change `PROMPT_COMMAND`; verify Terminal remains reachable
   and no successful command result is fabricated.

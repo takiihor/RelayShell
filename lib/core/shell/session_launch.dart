@@ -23,6 +23,7 @@ class SessionLaunchPlan {
     this.multiplexer,
     this.tmuxSessionName,
     this.workingDirectory,
+    this.herdrTerminalId,
   });
 
   final SessionMode mode;
@@ -39,6 +40,9 @@ class SessionLaunchPlan {
 
   final String? tmuxSessionName;
   final String? workingDirectory;
+
+  /// When set, stdout is Herdr NDJSON rather than a raw SSH PTY.
+  final String? herdrTerminalId;
 
   bool get usesExec => shellCommand != null;
 }

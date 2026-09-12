@@ -12,6 +12,7 @@ import '../../core/shell/multiplexer_session.dart';
 import '../../core/ssh/connection_manager.dart';
 import '../../core/ssh/ssh_connection.dart';
 import '../../core/ssh/ssh_failure.dart';
+import '../../core/ssh/herdr_service.dart';
 import '../../shared/models/models.dart';
 import '../terminal/terminal_manager.dart';
 import '../terminal/terminal_session.dart';
@@ -261,6 +262,7 @@ class SessionLauncher {
       final open = terminals.findAttached(
         hostId: host.id,
         tmuxSessionName: tmuxName,
+        herdrTerminalId: record.herdrTerminalId,
       );
       if (open != null) {
         terminals.setActive(open.id);
@@ -277,7 +279,14 @@ class SessionLauncher {
     final builder = _builderFor(host, preferences);
 
     final SessionLaunchPlan plan;
-    if (record.isPersistent && host.platform.supportsMultiplexer) {
+    if (record.herdrTerminalId != null) {
+      if (tmuxName == null || !host.platform.supportsMultiplexer) {
+        throw const LaunchException(
+          'This Herdr pane requires its original POSIX computer and session.',
+        );
+      }
+      plan = HerdrService.attach(tmuxName, record.herdrTerminalId!);
+    } else if (record.isPersistent && host.platform.supportsMultiplexer) {
       plan = builder.resumeSession(tmuxName!);
     } else {
       plan = record.launchCommand == null
@@ -518,7 +527,8 @@ class SessionLauncher {
     required SessionMode requested,
     required Host host,
   }) {
-    if (requested == SessionMode.persistent && !host.platform.supportsMultiplexer) {
+    if (requested == SessionMode.persistent &&
+        !host.platform.supportsMultiplexer) {
       return SessionMode.direct;
     }
     return requested;

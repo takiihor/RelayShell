@@ -95,6 +95,48 @@ void main() {
   });
 
   group('migrations', () {
+    test(
+      'v3 preserves legacy session rows and adds nullable pane identity',
+      () async {
+        final legacy = await databaseFactoryFfi.openDatabase(
+          inMemoryDatabasePath,
+          options: OpenDatabaseOptions(singleInstance: false),
+        );
+        try {
+          for (final sql in createSchemaStatements) {
+            await legacy.execute(sql);
+          }
+          for (final sql in schemaMigrations.first.statements) {
+            await legacy.execute(sql);
+          }
+          await legacy.insert('hosts', makeHost().toRow());
+          final record = SessionRecord(
+            id: 'legacy',
+            hostId: 'h1',
+            displayName: 'Daily',
+            mode: SessionMode.persistent,
+            tmuxSessionName: 'daily',
+            createdAt: DateTime.now(),
+            lastUsedAt: DateTime.now(),
+          );
+          await legacy.insert(
+            'session_records',
+            record.toRow()..remove('herdr_terminal_id'),
+          );
+          for (final sql in schemaMigrations.last.statements) {
+            await legacy.execute(sql);
+          }
+          final restored = SessionRecord.fromRow(
+            (await legacy.query('session_records')).single,
+          );
+          expect(restored.tmuxSessionName, 'daily');
+          expect(restored.herdrTerminalId, isNull);
+        } finally {
+          await legacy.close();
+        }
+      },
+    );
+
     test('a fresh database lands on the current version', () async {
       final reopened = await openMemory();
       final result = await reopened.db.rawQuery('PRAGMA user_version');
@@ -136,6 +178,44 @@ void main() {
   });
 
   group('HostsRepository', () {
+    test(
+      'pane shortcuts stay distinct from each other and the workspace',
+      () async {
+        await HostsRepository(database).upsert(makeHost());
+        final repository = SessionsRepository(database);
+        for (final terminal in [null, 'term_one', 'term_two']) {
+          await repository.upsert(
+            SessionRecord(
+              id: terminal ?? 'workspace',
+              hostId: 'h1',
+              displayName: 'Daily',
+              mode: SessionMode.persistent,
+              tmuxSessionName: 'daily',
+              herdrTerminalId: terminal,
+              createdAt: DateTime.now(),
+              lastUsedAt: DateTime.now(),
+            ),
+          );
+        }
+        expect(await repository.recent(), hasLength(3));
+        expect(
+          (await repository.byTmuxName(
+            hostId: 'h1',
+            tmuxSessionName: 'daily',
+          ))!.id,
+          'workspace',
+        );
+        expect(
+          (await repository.byTmuxName(
+            hostId: 'h1',
+            tmuxSessionName: 'daily',
+            herdrTerminalId: 'term_two',
+          ))!.id,
+          'term_two',
+        );
+      },
+    );
+
     test('round-trips a host', () async {
       final repository = HostsRepository(database);
       await repository.upsert(makeHost());

@@ -309,6 +309,7 @@ class ConfigTransfer {
                   ? null
                   : projectIdMap[oldProjectId],
               tmuxSessionName: entry['tmux_session_name'] as String?,
+              herdrTerminalId: entry['herdr_terminal_id'] as String?,
               displayName:
                   (entry['display_name'] as String?) ?? 'Imported session',
               mode: SessionMode.fromStorage(entry['mode'] as String?),

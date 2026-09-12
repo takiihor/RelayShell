@@ -2972,6 +2972,72 @@ abstract class AppLocalizations {
   /// **'Open Shell'**
   String get conversationOpen;
 
+  /// No description provided for @herdrPanes.
+  ///
+  /// In en, this message translates to:
+  /// **'Herdr panes'**
+  String get herdrPanes;
+
+  /// No description provided for @herdrSession.
+  ///
+  /// In en, this message translates to:
+  /// **'Herdr session'**
+  String get herdrSession;
+
+  /// No description provided for @herdrUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load Herdr panes. Check the connection and that Herdr 0.8 or newer is running on this computer.'**
+  String get herdrUnavailable;
+
+  /// No description provided for @herdrEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No panes found. Start Herdr on your computer, then refresh here.'**
+  String get herdrEmpty;
+
+  /// No description provided for @herdrCompose.
+  ///
+  /// In en, this message translates to:
+  /// **'Message or command'**
+  String get herdrCompose;
+
+  /// No description provided for @herdrSend.
+  ///
+  /// In en, this message translates to:
+  /// **'Send to pane'**
+  String get herdrSend;
+
+  /// No description provided for @herdrSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Input sent to Herdr'**
+  String get herdrSent;
+
+  /// No description provided for @herdrDeliveryUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery was not confirmed. Your draft is kept. Check the pane before retrying; it may already have received the input.'**
+  String get herdrDeliveryUnknown;
+
+  /// No description provided for @herdrScrollUp.
+  ///
+  /// In en, this message translates to:
+  /// **'Scroll remote pane up'**
+  String get herdrScrollUp;
+
+  /// No description provided for @herdrScrollDown.
+  ///
+  /// In en, this message translates to:
+  /// **'Scroll remote pane down'**
+  String get herdrScrollDown;
+
+  /// No description provided for @herdrEscape.
+  ///
+  /// In en, this message translates to:
+  /// **'Send Escape'**
+  String get herdrEscape;
+
   /// No description provided for @conversationTitle.
   ///
   /// In en, this message translates to:

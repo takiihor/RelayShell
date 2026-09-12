@@ -42,6 +42,32 @@ void main() {
     }
   });
 
+  testWidgets('safe-area bottom can be delegated to a following composer', (
+    tester,
+  ) async {
+    final modifiers = TerminalInputModifiers();
+    addTearDown(modifiers.dispose);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: AccessoryKeyboard(
+            rows: const [
+              ['ctrl'],
+            ],
+            haptics: false,
+            safeAreaBottom: false,
+            modifiers: modifiers,
+            onSequence: (_) {},
+          ),
+        ),
+      ),
+    );
+
+    final safeArea = tester.widget<SafeArea>(find.byType(SafeArea));
+    expect(safeArea.bottom, isFalse);
+  });
+
   testWidgets('long pressing CTRL locks it', (tester) async {
     final modifiers = TerminalInputModifiers();
     addTearDown(modifiers.dispose);

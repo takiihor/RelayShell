@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -5,12 +7,15 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/providers.dart';
 import '../../l10n/app_localizations.dart';
+import '../../shared/models/enums.dart';
 import '../../shared/navigation/routes.dart';
 import '../terminal/accessory_keyboard.dart';
+import '../terminal/herdr_panes_sheet.dart';
 import '../terminal/terminal_providers.dart';
 import '../terminal/terminal_session.dart';
 import 'conversation_controller.dart';
 import 'conversation_models.dart';
+import 'herdr_conversation_view.dart';
 
 /// Mobile-first command/output view over an existing live terminal PTY.
 class ConversationShellScreen extends ConsumerStatefulWidget {
@@ -49,16 +54,22 @@ class _ConversationShellScreenState
         ? manager.active
         : manager.byId(widget.sessionId!);
     _session = session;
-    if (session == null) return;
+    if (session == null || session.isHerdrPane) return;
     _conversation = ConversationController(session: session)
       ..addListener(_onConversationChanged);
   }
 
   void _onConversationChanged() {
     if (!mounted) return;
+    final follow = !_scroll.hasClients || _scroll.position.extentAfter < 80;
     setState(() {});
+    if (!follow) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || !_scroll.hasClients) return;
+      if (MediaQuery.disableAnimationsOf(context)) {
+        _scroll.jumpTo(_scroll.position.maxScrollExtent);
+        return;
+      }
       _scroll.animateTo(
         _scroll.position.maxScrollExtent,
         duration: const Duration(milliseconds: 180),
@@ -111,7 +122,9 @@ class _ConversationShellScreenState
     if (after.length <= before.length) return null;
 
     var prefix = 0;
-    final maxPrefix = before.length < after.length ? before.length : after.length;
+    final maxPrefix = before.length < after.length
+        ? before.length
+        : after.length;
     while (prefix < maxPrefix &&
         before.codeUnitAt(prefix) == after.codeUnitAt(prefix)) {
       prefix++;
@@ -156,6 +169,30 @@ class _ConversationShellScreenState
     final conversation = _conversation;
     final preferences = ref.watch(preferencesProvider);
 
+    if (session?.isHerdrPane == true) {
+      return Scaffold(
+        appBar: AppBar(
+          title: Text(session!.title),
+          actions: [
+            IconButton(
+              onPressed: () => showHerdrPanes(context, ref, session.host),
+              icon: const Icon(Icons.grid_view_outlined),
+              tooltip: l10n.herdrPanes,
+            ),
+            IconButton(
+              onPressed: () => _openTerminal(session),
+              icon: const Icon(Icons.terminal),
+              tooltip: l10n.computerOpenTerminal,
+            ),
+          ],
+        ),
+        body: HerdrConversationView(
+          key: ValueKey(session.id),
+          session: session,
+        ),
+      );
+    }
+
     if (session == null || conversation == null) {
       return Scaffold(
         appBar: AppBar(),
@@ -191,6 +228,12 @@ class _ConversationShellScreenState
           ],
         ),
         actions: [
+          if (session.host.platform == RemotePlatform.posix)
+            IconButton(
+              onPressed: () => showHerdrPanes(context, ref, session.host),
+              icon: const Icon(Icons.grid_view_outlined),
+              tooltip: l10n.herdrPanes,
+            ),
           IconButton(
             onPressed: () => _openTerminal(session),
             icon: const Icon(Icons.terminal),
@@ -202,13 +245,16 @@ class _ConversationShellScreenState
         children: [
           Expanded(
             child: conversation.commands.isEmpty
-                ? Center(
-                    child: Icon(
-                      Icons.chat_bubble_outline,
-                      size: 42,
-                      color: Theme.of(context).colorScheme.outline,
-                    ),
-                  )
+                ? session.isLive
+                      ? _ConversationEmptyState(hostName: session.host.name)
+                      : _ConversationUnavailableState(
+                          message:
+                              session.failure?.message ??
+                              l10n.terminalDisconnected,
+                          onReconnect: session.canReconnect
+                              ? () => unawaited(session.reconnect())
+                              : null,
+                        )
                 : ListView.builder(
                     controller: _scroll,
                     padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
@@ -230,7 +276,7 @@ class _ConversationShellScreenState
           _Composer(
             controller: _input,
             focusNode: _inputFocus,
-            enabled: session.isLive,
+            enabled: session.isLive && !conversation.isCompleting,
             running: active != null,
             interactive: active?.interactiveHint == true,
             onSubmit: _submitOrSend,
@@ -271,7 +317,16 @@ class _ConversationShellScreenState
     final session = _session;
     if (conversation == null || session == null || !session.isLive) return;
     final text = _input.text;
-    if (text.trim().isEmpty) return;
+    if (text.trim().isEmpty ||
+        (_input.value.composing.isValid &&
+            !_input.value.composing.isCollapsed)) {
+      return;
+    }
+    if (conversation.canSubmit && text.trim() == 'herdr') {
+      _inputFocus.unfocus();
+      unawaited(showHerdrPanes(context, ref, session.host));
+      return;
+    }
 
     if (conversation.canSendProcessInput) {
       conversation.sendProcessInput(text);
@@ -322,7 +377,7 @@ class _ConversationShellScreenState
         _inputFocus.unfocus();
         SystemChannels.textInput.invokeMethod<void>('TextInput.hide');
       case '\t':
-        _insertComposerText('\t');
+        unawaited(_completeComposerDirectory());
       default:
         if (_isPrintable(sequence)) {
           _insertComposerText(sequence);
@@ -334,6 +389,26 @@ class _ConversationShellScreenState
       value.isNotEmpty &&
       !value.contains('\x1b') &&
       value.runes.every((rune) => rune == 0x09 || rune >= 0x20);
+
+  Future<void> _completeComposerDirectory() async {
+    final conversation = _conversation;
+    if (conversation == null) return;
+    final before = _input.value;
+    if (!before.selection.isCollapsed ||
+        before.selection.extentOffset != before.text.length) {
+      return;
+    }
+
+    final completed = await conversation.completeDirectory(before.text);
+    if (!mounted || completed == null || _input.value != before) return;
+    _setInputValue(
+      TextEditingValue(
+        text: completed,
+        selection: TextSelection.collapsed(offset: completed.length),
+      ),
+    );
+    _inputFocus.requestFocus();
+  }
 
   void _insertComposerText(String value) {
     final text = _input.text;
@@ -353,7 +428,9 @@ class _ConversationShellScreenState
 
   void _moveComposerCursor(int delta) {
     final selection = _input.selection;
-    final current = selection.isValid ? selection.extentOffset : _input.text.length;
+    final current = selection.isValid
+        ? selection.extentOffset
+        : _input.text.length;
     final candidate = current + delta;
     final next = candidate < 0
         ? 0
@@ -409,6 +486,100 @@ class _ConversationShellScreenState
   void _openTerminal(TerminalSession session) {
     ref.read(terminalManagerProvider).setActive(session.id);
     context.push('${Routes.terminal}?session=${session.id}');
+  }
+}
+
+class _ConversationEmptyState extends StatelessWidget {
+  const _ConversationEmptyState({required this.hostName});
+
+  final String hostName;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 40),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.terminal_outlined,
+              size: 42,
+              color: theme.colorScheme.primary,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              l10n.conversationReadyTitle,
+              style: theme.textTheme.titleLarge,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              l10n.conversationReadyBody(hostName),
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ConversationUnavailableState extends StatelessWidget {
+  const _ConversationUnavailableState({
+    required this.message,
+    required this.onReconnect,
+  });
+
+  final String message;
+  final VoidCallback? onReconnect;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 40),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.link_off_outlined,
+              size: 42,
+              color: theme.colorScheme.error,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              l10n.terminalDisconnected,
+              style: theme.textTheme.titleLarge,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              message,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            if (onReconnect != null) ...[
+              const SizedBox(height: 20),
+              FilledButton.icon(
+                onPressed: onReconnect,
+                icon: const Icon(Icons.refresh),
+                label: Text(l10n.actionReconnect),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
   }
 }
 
@@ -512,9 +683,11 @@ class _CommandExchange extends StatelessWidget {
                   ),
                 ],
                 if (command.isRunning) ...[
-                  if (command.output.isNotEmpty || command.processInputs.isNotEmpty)
+                  if (command.output.isNotEmpty ||
+                      command.processInputs.isNotEmpty)
                     const SizedBox(height: 10),
-                  const LinearProgressIndicator(minHeight: 2),
+                  if (!command.interactiveHint && !command.fullScreenDetected)
+                    const LinearProgressIndicator(minHeight: 2),
                   const SizedBox(height: 8),
                   Row(
                     children: [
@@ -621,7 +794,13 @@ class _Composer extends StatelessWidget {
                   focusNode: focusNode,
                   enabled: enabled,
                   minLines: 1,
-                  maxLines: 5,
+                  maxLines: MediaQuery.sizeOf(context).height - bottom < 350
+                      ? 1
+                      : 5,
+                  autocorrect: false,
+                  enableSuggestions: false,
+                  smartDashesType: SmartDashesType.disabled,
+                  smartQuotesType: SmartQuotesType.disabled,
                   keyboardType: TextInputType.multiline,
                   textInputAction: TextInputAction.newline,
                   style: const TextStyle(fontFamily: 'monospace'),
@@ -649,7 +828,7 @@ class _Composer extends StatelessWidget {
               IconButton.filled(
                 onPressed: enabled ? onSubmit : null,
                 icon: const Icon(Icons.arrow_upward),
-                tooltip: l10n.actionRun,
+                tooltip: running ? l10n.conversationSendInput : l10n.actionRun,
               ),
             ],
           ),

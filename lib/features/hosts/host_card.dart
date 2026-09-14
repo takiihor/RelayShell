@@ -3,134 +3,133 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/providers.dart';
-import '../../shared/navigation/routes.dart';
-import '../../core/platform/wake_on_lan.dart';
 import '../../l10n/app_localizations.dart';
 import '../../shared/models/models.dart';
+import '../../shared/navigation/routes.dart';
 import '../../shared/utilities/formatting.dart';
-import '../../shared/widgets/common.dart';
 import '../../shared/widgets/status_indicator.dart';
 import '../sessions/session_actions.dart';
+import '../terminal/herdr_panes_sheet.dart';
 
-/// A computer, with its one clear primary action (SPEC 7.1, 39).
-///
-/// "Connect" is the primary action and everything else is secondary or in the
-/// overflow, because the card exists to get the user onto the machine.
+/// A saved SSH connection and its one primary action: open Conversation Shell.
 class HostCard extends ConsumerWidget {
   const HostCard({required this.host, super.key, this.showActions = true});
 
   final Host host;
   final bool showActions;
 
+  Future<void> _open(BuildContext context, WidgetRef ref) {
+    if (host.platform == RemotePlatform.posix) {
+      return openHostConversation(context, ref, host);
+    }
+    return openHostTerminal(context, ref, host);
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
-
     final connectionStatus = ref
         .watch(hostConnectionStatusProvider(host.id))
         .value;
     final reachability = ref.watch(hostReachabilityProvider(host.id));
     final isConnected = connectionStatus?.state == SshConnectionState.connected;
-    final wol = ref.watch(wolProfileProvider(host.id)).value;
+    final openLabel = host.platform == RemotePlatform.posix
+        ? l10n.conversationOpen
+        : l10n.computerOpenTerminal;
 
-    return Card(
-      child: InkWell(
-        onTap: () => context.go(Routes.hostDetail(host.id)),
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  _HostAvatar(host: host),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Flexible(
-                              child: Text(
-                                host.name,
-                                style: theme.textTheme.titleSmall,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            if (host.favorite) ...[
-                              const SizedBox(width: 6),
-                              Icon(
-                                Icons.push_pin,
-                                size: 14,
-                                color: theme.colorScheme.onSurfaceVariant,
-                              ),
-                            ],
-                          ],
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          host.displaySubtitle,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                            fontFamily: 'monospace',
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (showActions) _HostOverflowMenu(host: host, wol: wol),
-                ],
-              ),
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  // Once connected, the live state is the truth; the advisory
-                  // reachability probe stops being interesting.
-                  if (isConnected || (connectionStatus?.state.isBusy ?? false))
-                    ConnectionStatusIndicator(state: connectionStatus!.state)
-                  else
-                    ReachabilityIndicator(reachability: reachability),
-                  const Spacer(),
-                  Flexible(
-                    child: Text(
-                      host.lastConnectedAt == null
-                          ? l10n.computerNeverConnected
-                          : l10n.computerLastConnected(
-                              formatRelativeTime(l10n, host.lastConnectedAt),
-                            ),
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.end,
-                    ),
-                  ),
-                ],
-              ),
-              if (showActions) ...[
-                const SizedBox(height: 12),
+    return Semantics(
+      button: true,
+      label: '$openLabel ${host.name}',
+      child: Card(
+        child: InkWell(
+          onTap: () => _open(context, ref),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
                 Row(
                   children: [
+                    _HostAvatar(host: host),
+                    const SizedBox(width: 12),
                     Expanded(
-                      child: FilledButton.icon(
-                        onPressed: () => openHostTerminal(context, ref, host),
-                        icon: const Icon(Icons.terminal, size: 18),
-                        label: Text(l10n.actionConnect),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            host.name,
+                            style: theme.textTheme.titleMedium,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            host.displaySubtitle,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                              fontFamily: 'monospace',
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    IconButton.outlined(
-                      onPressed: () => context.push(Routes.files(host.id)),
-                      icon: const Icon(Icons.folder_outlined),
-                      tooltip: l10n.computerFiles,
-                    ),
+                    if (showActions) _HostOverflowMenu(host: host),
                   ],
                 ),
+                const SizedBox(height: 14),
+                Row(
+                  children: [
+                    if (isConnected ||
+                        (connectionStatus?.state.isBusy ?? false))
+                      ConnectionStatusIndicator(state: connectionStatus!.state)
+                    else
+                      ReachabilityIndicator(reachability: reachability),
+                    const Spacer(),
+                    if (host.lastConnectedAt != null)
+                      Flexible(
+                        child: Text(
+                          l10n.computerLastConnected(
+                            formatRelativeTime(l10n, host.lastConnectedAt),
+                          ),
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.end,
+                        ),
+                      ),
+                  ],
+                ),
+                if (showActions) ...[
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      onPressed: () => _open(context, ref),
+                      icon: Icon(
+                        host.platform == RemotePlatform.posix
+                            ? Icons.chat_bubble_outline
+                            : Icons.terminal,
+                        size: 18,
+                      ),
+                      label: Text(openLabel),
+                    ),
+                  ),
+                  if (host.platform == RemotePlatform.posix) ...[
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: () => showHerdrPanes(context, ref, host),
+                        icon: const Icon(Icons.grid_view_outlined, size: 18),
+                        label: Text(l10n.herdrPanes),
+                      ),
+                    ),
+                  ],
+                ],
               ],
-            ],
+            ),
           ),
         ),
       ),
@@ -151,18 +150,18 @@ class _HostAvatar extends StatelessWidget {
         : Color(host.colorValue!);
 
     return Container(
-      width: 40,
-      height: 40,
+      width: 44,
+      height: 44,
       decoration: BoxDecoration(
         color: color,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(12),
       ),
       alignment: Alignment.center,
       child: Icon(
         host.platform.isWindows
             ? Icons.desktop_windows_outlined
             : Icons.dns_outlined,
-        size: 20,
+        size: 22,
         color: theme.colorScheme.onPrimaryContainer,
       ),
     );
@@ -170,10 +169,9 @@ class _HostAvatar extends StatelessWidget {
 }
 
 class _HostOverflowMenu extends ConsumerWidget {
-  const _HostOverflowMenu({required this.host, this.wol});
+  const _HostOverflowMenu({required this.host});
 
   final Host host;
-  final WolProfile? wol;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -181,52 +179,28 @@ class _HostOverflowMenu extends ConsumerWidget {
 
     return PopupMenuButton<String>(
       icon: const Icon(Icons.more_vert),
+      tooltip: l10n.actionEdit,
       onSelected: (value) async {
         switch (value) {
-          case 'new-terminal':
-            await openAdditionalHostTerminal(context, ref, host);
-          case 'files':
-            context.push(Routes.files(host.id));
-          case 'projects':
-            context.go(Routes.hostDetail(host.id));
           case 'edit':
             context.push(Routes.hostEdit(host.id));
           case 'favorite':
             await ref
                 .read(hostsRepositoryProvider)
                 .setFavorite(host.id, !host.favorite);
-          case 'wake':
-            await _wake(context, ref);
           case 'disconnect':
             await ref.read(connectionManagerProvider).disconnect(host.id);
         }
       },
       itemBuilder: (context) => [
         PopupMenuItem(
-          value: 'new-terminal',
+          value: 'edit',
           child: ListTile(
-            leading: const Icon(Icons.terminal),
-            title: Text(l10n.computerNewTerminal),
+            leading: const Icon(Icons.tune_outlined),
+            title: Text(l10n.computerEdit),
             contentPadding: EdgeInsets.zero,
           ),
         ),
-        PopupMenuItem(
-          value: 'files',
-          child: ListTile(
-            leading: const Icon(Icons.folder_outlined),
-            title: Text(l10n.computerFiles),
-            contentPadding: EdgeInsets.zero,
-          ),
-        ),
-        if (wol != null)
-          PopupMenuItem(
-            value: 'wake',
-            child: ListTile(
-              leading: const Icon(Icons.power_settings_new),
-              title: Text(l10n.actionWake),
-              contentPadding: EdgeInsets.zero,
-            ),
-          ),
         PopupMenuItem(
           value: 'favorite',
           child: ListTile(
@@ -234,14 +208,6 @@ class _HostOverflowMenu extends ConsumerWidget {
               host.favorite ? Icons.push_pin : Icons.push_pin_outlined,
             ),
             title: Text(l10n.computerFavorite),
-            contentPadding: EdgeInsets.zero,
-          ),
-        ),
-        PopupMenuItem(
-          value: 'edit',
-          child: ListTile(
-            leading: const Icon(Icons.edit_outlined),
-            title: Text(l10n.actionEdit),
             contentPadding: EdgeInsets.zero,
           ),
         ),
@@ -256,17 +222,5 @@ class _HostOverflowMenu extends ConsumerWidget {
           ),
       ],
     );
-  }
-
-  Future<void> _wake(BuildContext context, WidgetRef ref) async {
-    final l10n = AppLocalizations.of(context);
-    final profile = wol;
-    if (profile == null) return;
-    try {
-      await const WakeOnLan().wake(profile);
-      if (context.mounted) showMessage(context, l10n.wolSent);
-    } on WakeOnLanException catch (error) {
-      if (context.mounted) showMessage(context, error.message, isError: true);
-    }
   }
 }

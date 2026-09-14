@@ -6,6 +6,7 @@ import 'package:uuid/uuid.dart';
 import '../../core/shell/session_launch.dart';
 import '../../core/shell/shell_quoting.dart';
 import '../../shared/models/enums.dart';
+import 'transcript_output.dart';
 
 enum ConversationCommandState { running, completed, interrupted, unknown }
 
@@ -45,6 +46,7 @@ class ConversationSession extends ChangeNotifier {
   String _escape = '';
   bool _discardEscape = false;
   bool _begun = false;
+  TranscriptOutput? _output;
   Timer? _refresh;
   Timer? _handshake;
   void Function(String)? send;
@@ -106,6 +108,7 @@ class ConversationSession extends ChangeNotifier {
     if (_commands.length == maxCommands) _commands.removeAt(0);
     _commands.add(entry);
     _active = entry;
+    _output = TranscriptOutput();
     _begun = false;
     ready = false;
     send!(
@@ -114,6 +117,18 @@ class ConversationSession extends ChangeNotifier {
       '(exit "\$__rs_status"); builtin eval -- $quoted\n',
     );
     notifyListeners();
+    return true;
+  }
+
+  /// Foreground input bypasses command framing; never queues a second command.
+  bool sendProcessInput(String text) {
+    if (_active == null || unavailable || send == null || text.isEmpty) {
+      return false;
+    }
+    if (text.contains('\x00') || text.length > maxCommandCharacters) {
+      throw ArgumentError('Input contains NUL or exceeds the input limit.');
+    }
+    send!('${text.replaceAll('\r\n', '\n').replaceAll('\n', '\r')}\r');
     return true;
   }
 
@@ -154,7 +169,8 @@ class ConversationSession extends ChangeNotifier {
     void flush() {
       if (plain.isNotEmpty && _begun && _active != null) {
         final entry = _active!;
-        entry.output += plain.toString();
+        _output!.write(plain.toString());
+        entry.output = _output!.text;
         if (entry.output.length > maxOutputCharacters) {
           var cut = entry.output.length - maxOutputCharacters;
           // Keep UTF-16 surrogate pairs intact at the retention boundary.
@@ -174,7 +190,11 @@ class ConversationSession extends ChangeNotifier {
         if (rune == 27) {
           flush();
           _escape = char;
-        } else if (rune == 10 || rune == 9 || rune >= 32 && rune != 127) {
+        } else if (rune == 13 ||
+            rune == 8 ||
+            rune == 10 ||
+            rune == 9 ||
+            rune >= 32 && rune != 127) {
           plain.write(char);
         }
         continue;
@@ -189,7 +209,12 @@ class ConversationSession extends ChangeNotifier {
           : _escape.length >= 2;
       if (finished) {
         if (!_discardEscape) {
-          if (osc) _marker(_escape);
+          if (osc) {
+            _marker(_escape);
+          } else if (_begun && _active != null) {
+            _output!.write(_escape);
+            _active!.output = _output!.text;
+          }
           if (csi && RegExp(r'^\x1b\[\?(47|1047|1049)h$').hasMatch(_escape)) {
             _active?.interactive = true;
           }

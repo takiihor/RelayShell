@@ -106,10 +106,11 @@ explicit user actions; the shell's automatic history file is disabled.
 
 ## Herdr on your phone
 
-For an existing Herdr workflow, set the computer's multiplexer to **Herdr**, then
-choose **Herdr panes** on the computer or project. Select the named session and
-pane by its title, agent status and working directory. This requires a POSIX
-host with Herdr's native terminal-control CLI (tested with 0.8.0).
+Type **herdr** in Conversation, choose **Herdr panes** below a POSIX computer
+on the Conversation home screen, or tap the grid icon in an open Conversation.
+Select the named session and pane by its title, agent status and working
+directory. This requires a POSIX host with Herdr's native terminal-control CLI
+(tested with 0.8.0).
 
 - A multiline composer sends prompts to recognized agents or commands to shell
   panes. Enter inserts a newline; Send or Ctrl/Command+Enter submits.
@@ -122,7 +123,10 @@ host with Herdr's native terminal-control CLI (tested with 0.8.0).
   Drafts are memory-only. Detach releases control; forgetting a shortcut does
   not stop the remote pane or the daily Herdr session.
 
-Herdr supplies rendered terminal frames, so this view preserves the agent/TUI
+Selected panes open in Conversation with selectable live output and a native
+composer. They never automatically switch to Terminal. **Open Terminal** is an
+explicit option for full-screen tools. Herdr supplies rendered terminal frames;
+the conversation snapshot preserves the agent/TUI
 screen rather than claiming command-card boundaries, exit codes or a chat
 transcript. Structured Bash cards remain the separate **Open Shell** workflow.
 

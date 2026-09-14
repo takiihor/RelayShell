@@ -17,6 +17,7 @@ import 'touch_selection_menu_detector.dart';
 import 'two_finger_swipe_detector.dart';
 import '../conversation_shell/conversation_view.dart';
 import 'herdr_composer.dart';
+import 'herdr_panes_sheet.dart';
 
 /// The interactive terminal (SPEC 10).
 ///
@@ -152,6 +153,7 @@ class _TerminalScreenState extends ConsumerState<TerminalScreen> {
                     key: ValueKey(session.id),
                     session: session,
                     onTerminal: () => setState(() => _terminalMode = true),
+                    onHerdr: () => showHerdrPanes(context, ref, session.host),
                   )
                 : TwoFingerSwipeDetector(
                     onSwipe: _switchTerminal,

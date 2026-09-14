@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -5,18 +7,14 @@ import 'package:go_router/go_router.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../core/providers.dart';
-import '../../shared/navigation/routes.dart';
-import '../../core/platform/wake_on_lan.dart';
 import '../../core/ssh/ssh_failure.dart';
 import '../../l10n/app_localizations.dart';
 import '../../shared/models/models.dart';
+import '../../shared/navigation/routes.dart';
 import '../../shared/widgets/common.dart';
 import '../keys/key_actions.dart';
 
-/// Create or edit a computer (SPEC 8.3).
-///
-/// Testing the connection is offered but never required: a user adding a
-/// machine that is currently asleep should still be able to save it.
+/// The short setup flow for a computer reached over SSH or Tailscale.
 class HostEditScreen extends ConsumerStatefulWidget {
   const HostEditScreen({super.key, this.hostId});
 
@@ -28,25 +26,14 @@ class HostEditScreen extends ConsumerStatefulWidget {
 
 class _HostEditScreenState extends ConsumerState<HostEditScreen> {
   final _formKey = GlobalKey<FormState>();
-
   final _name = TextEditingController();
   final _hostname = TextEditingController();
-  final _port = TextEditingController(text: '${Host.defaultPort}');
   final _username = TextEditingController();
+  final _port = TextEditingController(text: '${Host.defaultPort}');
   final _startupDirectory = TextEditingController();
-  final _notes = TextEditingController();
-
-  final _wolMac = TextEditingController();
-  final _wolBroadcast = TextEditingController(text: '255.255.255.255');
-  final _wolPort = TextEditingController(text: '9');
 
   AuthMethod _authMethod = AuthMethod.privateKey;
-  RemotePlatform _platform = RemotePlatform.posix;
-  MultiplexerKind _multiplexer = MultiplexerKind.tmux;
   String? _credentialId;
-  bool _favorite = false;
-  bool _wolEnabled = false;
-
   Host? _existing;
   bool _loaded = false;
   bool _saving = false;
@@ -60,10 +47,6 @@ class _HostEditScreenState extends ConsumerState<HostEditScreen> {
   void initState() {
     super.initState();
     if (_isNew) {
-      // A new computer starts on the user's preferred backend; from then on the
-      // choice belongs to the host, because it depends on what is installed
-      // there rather than on a global taste.
-      _multiplexer = ref.read(preferencesProvider).defaultMultiplexer;
       _loaded = true;
     } else {
       _load();
@@ -72,7 +55,6 @@ class _HostEditScreenState extends ConsumerState<HostEditScreen> {
 
   Future<void> _load() async {
     final host = await ref.read(hostsRepositoryProvider).byId(widget.hostId!);
-    final wol = await ref.read(wolRepositoryProvider).forHost(widget.hostId!);
     if (!mounted || host == null) {
       setState(() => _loaded = true);
       return;
@@ -82,77 +64,58 @@ class _HostEditScreenState extends ConsumerState<HostEditScreen> {
       _existing = host;
       _name.text = host.name;
       _hostname.text = host.hostname;
-      _port.text = '${host.port}';
       _username.text = host.username;
+      _port.text = '${host.port}';
       _startupDirectory.text = host.startupDirectory ?? '';
-      _notes.text = host.environmentNotes ?? '';
       _authMethod = host.authMethod;
-      _platform = host.platform;
-      _multiplexer = host.multiplexer;
       _credentialId = host.credentialId;
-      _favorite = host.favorite;
-      if (wol != null) {
-        _wolEnabled = true;
-        _wolMac.text = wol.macAddress;
-        _wolBroadcast.text = wol.broadcastAddress;
-        _wolPort.text = '${wol.port}';
-      }
       _loaded = true;
     });
   }
 
   @override
   void dispose() {
-    for (final controller in [
-      _name,
-      _hostname,
-      _port,
-      _username,
-      _startupDirectory,
-      _notes,
-      _wolMac,
-      _wolBroadcast,
-      _wolPort,
-    ]) {
-      controller.dispose();
-    }
+    _name.dispose();
+    _hostname.dispose();
+    _username.dispose();
+    _port.dispose();
+    _startupDirectory.dispose();
     super.dispose();
+  }
+
+  String get _connectionName {
+    final entered = _name.text.trim();
+    return entered.isEmpty ? _hostname.text.trim() : entered;
   }
 
   Host _buildHost() {
     final now = DateTime.now();
     final existing = _existing;
+    final port = int.parse(_port.text.trim());
 
     if (existing != null) {
       return existing.copyWith(
-        name: _name.text.trim(),
+        name: _connectionName,
         hostname: _hostname.text.trim(),
-        port: int.parse(_port.text.trim()),
+        port: port,
         username: _username.text.trim(),
         authMethod: _authMethod,
         credentialId: _credentialId,
         startupDirectory: _emptyToNull(_startupDirectory.text),
-        environmentNotes: _emptyToNull(_notes.text),
-        platform: _platform,
-        multiplexer: _multiplexer,
-        favorite: _favorite,
         updatedAt: now,
       );
     }
 
     return Host(
       id: const Uuid().v4(),
-      name: _name.text.trim(),
+      name: _connectionName,
       hostname: _hostname.text.trim(),
-      port: int.parse(_port.text.trim()),
+      port: port,
       username: _username.text.trim(),
       authMethod: _authMethod,
       credentialId: _credentialId,
-      startupDirectory: _emptyToNull(_startupDirectory.text),
-      environmentNotes: _emptyToNull(_notes.text),
-      platform: _platform,
-      multiplexer: _multiplexer,
-      favorite: _favorite,
+      platform: RemotePlatform.posix,
+      multiplexer: MultiplexerKind.tmux,
       createdAt: now,
       updatedAt: now,
     );
@@ -163,10 +126,6 @@ class _HostEditScreenState extends ConsumerState<HostEditScreen> {
     return trimmed.isEmpty ? null : trimmed;
   }
 
-  /// Connects once to prove the settings work, then disconnects.
-  ///
-  /// This is a real connection, so it also walks the user through fingerprint
-  /// verification here rather than in the middle of their first terminal.
   Future<void> _test() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
     setState(() {
@@ -175,16 +134,29 @@ class _HostEditScreenState extends ConsumerState<HostEditScreen> {
     });
 
     final host = _buildHost();
+    // A saved computer can already have an interactive terminal using its
+    // shared transport. Give this probe its own transient identity so a test
+    // neither reuses nor disconnects the user's live shell.
+    final testHost = Host(
+      id: const Uuid().v4(),
+      name: host.name,
+      hostname: host.hostname,
+      port: host.port,
+      username: host.username,
+      authMethod: host.authMethod,
+      credentialId: host.credentialId,
+      platform: host.platform,
+      multiplexer: host.multiplexer,
+      createdAt: host.createdAt,
+      updatedAt: host.updatedAt,
+    );
+    final connections = ref.read(connectionManagerProvider);
     final l10n = AppLocalizations.of(context);
-
     try {
-      final connection = await ref
-          .read(connectionManagerProvider)
-          .connect(host);
-      await ref.read(connectionManagerProvider).disconnect(host.id);
+      final connection = await connections.connect(testHost);
       if (!mounted) return;
       setState(() {
-        _testSucceeded = connection.host.id == host.id;
+        _testSucceeded = connection.host.id == testHost.id;
         _testResult = l10n.testConnectionSuccess;
       });
     } on SshFailure catch (failure) {
@@ -196,6 +168,9 @@ class _HostEditScreenState extends ConsumerState<HostEditScreen> {
             : '${failure.message}\n${failure.action}';
       });
     } finally {
+      // Closing this short-lived probe must never block the result or touch a
+      // live terminal connection for the saved computer.
+      unawaited(connections.disconnect(testHost.id));
       if (mounted) setState(() => _testing = false);
     }
   }
@@ -205,9 +180,6 @@ class _HostEditScreenState extends ConsumerState<HostEditScreen> {
     setState(() => _saving = true);
 
     final host = _buildHost();
-
-    // Changing the endpoint must not inherit the old machine's trust decision
-    // (SPEC 8.4), so the trusted key for the previous address is dropped.
     final previous = _existing;
     if (previous != null &&
         (previous.hostname != host.hostname || previous.port != host.port)) {
@@ -226,26 +198,9 @@ class _HostEditScreenState extends ConsumerState<HostEditScreen> {
           port: host.port,
         );
 
-    if (_wolEnabled && WakeOnLan.isValidMac(_wolMac.text)) {
-      await ref
-          .read(wolRepositoryProvider)
-          .upsert(
-            WolProfile(
-              hostId: host.id,
-              macAddress: _wolMac.text.trim(),
-              broadcastAddress: _wolBroadcast.text.trim().isEmpty
-                  ? '255.255.255.255'
-                  : _wolBroadcast.text.trim(),
-              port: int.tryParse(_wolPort.text.trim()) ?? 9,
-            ),
-          );
-    } else if (!_wolEnabled) {
-      await ref.read(wolRepositoryProvider).delete(host.id);
-    }
-
     if (!mounted) return;
     setState(() => _saving = false);
-    context.go(Routes.hostDetail(host.id));
+    context.go(Routes.home);
   }
 
   @override
@@ -254,26 +209,40 @@ class _HostEditScreenState extends ConsumerState<HostEditScreen> {
     final theme = Theme.of(context);
     final credentials = ref.watch(credentialsProvider).value ?? const [];
 
-    if (!_loaded) {
-      return const Scaffold(body: LoadingView());
-    }
+    if (!_loaded) return const Scaffold(body: LoadingView());
 
     return Scaffold(
       appBar: AppBar(
         title: Text(_isNew ? l10n.computerNew : l10n.computerEdit),
-        actions: [
-          TextButton(
-            onPressed: _saving ? null : _save,
-            child: Text(l10n.actionSave),
-          ),
-        ],
+      ),
+      bottomNavigationBar: SafeArea(
+        minimum: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+        child: FilledButton.icon(
+          onPressed: _saving ? null : _save,
+          icon: _saving
+              ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Icon(Icons.save_outlined),
+          label: Text(l10n.actionSave),
+        ),
       ),
       body: Form(
         key: _formKey,
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 104),
           children: [
-            _SectionLabel(text: l10n.computerSectionConnection),
+            Text(l10n.connectionSetupTitle, style: theme.textTheme.titleLarge),
+            const SizedBox(height: 4),
+            Text(
+              l10n.connectionSetupBody,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 24),
             TextFormField(
               controller: _name,
               textInputAction: TextInputAction.next,
@@ -281,13 +250,13 @@ class _HostEditScreenState extends ConsumerState<HostEditScreen> {
                 labelText: l10n.computerFieldName,
                 hintText: l10n.computerFieldNameHint,
               ),
-              validator: _required(l10n),
             ),
             const SizedBox(height: 12),
             TextFormField(
               controller: _hostname,
               textInputAction: TextInputAction.next,
               autocorrect: false,
+              enableSuggestions: false,
               keyboardType: TextInputType.url,
               decoration: InputDecoration(
                 labelText: l10n.computerFieldHostname,
@@ -296,43 +265,22 @@ class _HostEditScreenState extends ConsumerState<HostEditScreen> {
               validator: _required(l10n),
             ),
             const SizedBox(height: 12),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SizedBox(
-                  width: 110,
-                  child: TextFormField(
-                    controller: _port,
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    decoration: InputDecoration(
-                      labelText: l10n.computerFieldPort,
-                    ),
-                    validator: (value) {
-                      final port = int.tryParse(value?.trim() ?? '');
-                      if (port == null || port < 1 || port > 65535) {
-                        return l10n.errorInvalidPort;
-                      }
-                      return null;
-                    },
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: TextFormField(
-                    controller: _username,
-                    autocorrect: false,
-                    decoration: InputDecoration(
-                      labelText: l10n.computerFieldUsername,
-                    ),
-                    validator: _required(l10n),
-                  ),
-                ),
-              ],
+            TextFormField(
+              controller: _username,
+              textInputAction: TextInputAction.done,
+              autocorrect: false,
+              enableSuggestions: false,
+              decoration: InputDecoration(
+                labelText: l10n.computerFieldUsername,
+              ),
+              validator: _required(l10n),
             ),
-
             const SizedBox(height: 24),
-            _SectionLabel(text: l10n.computerSectionAuthentication),
+            Text(
+              l10n.computerSectionAuthentication,
+              style: theme.textTheme.titleMedium,
+            ),
+            const SizedBox(height: 8),
             DropdownButtonFormField<AuthMethod>(
               initialValue: _authMethod,
               decoration: InputDecoration(labelText: l10n.authSelectCredential),
@@ -356,7 +304,7 @@ class _HostEditScreenState extends ConsumerState<HostEditScreen> {
               }),
             ),
             if (_authMethod == AuthMethod.privateKey) ...[
-              const SizedBox(height: 4),
+              const SizedBox(height: 8),
               Text(
                 l10n.authMethodRecommendation,
                 style: theme.textTheme.bodySmall?.copyWith(
@@ -380,206 +328,103 @@ class _HostEditScreenState extends ConsumerState<HostEditScreen> {
                 onChanged: (id) => setState(() => _credentialId = id),
               ),
             ],
-            if (_authMethod == AuthMethod.keyboardInteractive) ...[
-              const SizedBox(height: 8),
-              Text(
-                l10n.authMethodKeyboardInteractive,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ],
-
             const SizedBox(height: 12),
             OutlinedButton.icon(
               onPressed: _testing ? null : _test,
               icon: _testing
                   ? const SizedBox(
-                      width: 16,
-                      height: 16,
+                      width: 18,
+                      height: 18,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Icon(Icons.wifi_tethering, size: 18),
+                  : const Icon(Icons.wifi_tethering_outlined),
               label: Text(
                 _testing ? l10n.testConnectionRunning : l10n.actionTest,
               ),
             ),
-            const SizedBox(height: 4),
-            Text(
-              l10n.testConnectionOptional,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
             if (_testResult != null) ...[
               const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: _testSucceeded
-                      ? theme.colorScheme.secondaryContainer
-                      : theme.colorScheme.errorContainer,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  _testResult!,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: _testSucceeded
-                        ? theme.colorScheme.onSecondaryContainer
-                        : theme.colorScheme.onErrorContainer,
-                  ),
-                ),
-              ),
+              _TestResult(success: _testSucceeded, text: _testResult!),
             ],
-
-            const SizedBox(height: 24),
-            _SectionLabel(text: l10n.computerSectionOptions),
-            DropdownButtonFormField<RemotePlatform>(
-              initialValue: _platform,
-              decoration: InputDecoration(
-                labelText: l10n.computerFieldPlatform,
-                helperText: l10n.computerFieldPlatformHelp,
-                helperMaxLines: 3,
-              ),
-              items: [
-                for (final platform in RemotePlatform.values)
-                  DropdownMenuItem(
-                    value: platform,
-                    child: Text(platform.label),
+            const SizedBox(height: 20),
+            ExpansionTile(
+              tilePadding: EdgeInsets.zero,
+              title: Text(l10n.computerAdvanced),
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: TextFormField(
+                    controller: _port,
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    decoration: InputDecoration(
+                      labelText: l10n.computerFieldPort,
+                    ),
+                    validator: (value) {
+                      final port = int.tryParse(value?.trim() ?? '');
+                      if (port == null || port < 1 || port > 65535) {
+                        return l10n.errorInvalidPort;
+                      }
+                      return null;
+                    },
                   ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: TextFormField(
+                    controller: _startupDirectory,
+                    autocorrect: false,
+                    enableSuggestions: false,
+                    decoration: InputDecoration(
+                      labelText: l10n.computerFieldStartupDirectory,
+                      helperText: l10n.computerFieldStartupDirectoryHelp,
+                    ),
+                  ),
+                ),
               ],
-              onChanged: (value) =>
-                  setState(() => _platform = value ?? RemotePlatform.posix),
             ),
-            // Only POSIX hosts can run a multiplexer, so the choice is hidden
-            // rather than shown disabled on Windows (SPEC 30).
-            if (_platform.supportsMultiplexer) ...[
-              const SizedBox(height: 12),
-              DropdownButtonFormField<MultiplexerKind>(
-                initialValue: _multiplexer,
-                decoration: InputDecoration(
-                  labelText: l10n.computerFieldMultiplexer,
-                  helperText: l10n.computerFieldMultiplexerHelp,
-                  helperMaxLines: 3,
-                ),
-                items: [
-                  for (final kind in MultiplexerKind.values)
-                    DropdownMenuItem(value: kind, child: Text(kind.label)),
-                ],
-                onChanged: (value) =>
-                    setState(() => _multiplexer = value ?? MultiplexerKind.tmux),
-              ),
-            ],
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _startupDirectory,
-              autocorrect: false,
-              decoration: InputDecoration(
-                labelText: l10n.computerFieldStartupDirectory,
-                helperText: l10n.computerFieldStartupDirectoryHelp,
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _notes,
-              maxLines: 3,
-              decoration: InputDecoration(
-                labelText: l10n.computerFieldNotes,
-                helperText: l10n.computerFieldNotesHelp,
-                alignLabelWithHint: true,
-              ),
-            ),
-            const SizedBox(height: 8),
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              value: _favorite,
-              title: Text(l10n.computerFavorite),
-              onChanged: (value) => setState(() => _favorite = value),
-            ),
-
-            const SizedBox(height: 12),
-            _SectionLabel(text: l10n.computerSectionWol),
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              value: _wolEnabled,
-              title: Text(l10n.wolEnable),
-              subtitle: Text(l10n.wolBestEffort),
-              onChanged: (value) => setState(() => _wolEnabled = value),
-            ),
-            if (_wolEnabled) ...[
-              const SizedBox(height: 8),
-              TextFormField(
-                controller: _wolMac,
-                autocorrect: false,
-                decoration: InputDecoration(
-                  labelText: l10n.wolFieldMac,
-                  hintText: l10n.wolFieldMacHint,
-                ),
-                validator: (value) {
-                  if (!_wolEnabled) return null;
-                  if (!WakeOnLan.isValidMac(value ?? '')) {
-                    return l10n.wolInvalidMac;
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextFormField(
-                      controller: _wolBroadcast,
-                      autocorrect: false,
-                      decoration: InputDecoration(
-                        labelText: l10n.wolFieldBroadcast,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  SizedBox(
-                    width: 90,
-                    child: TextFormField(
-                      controller: _wolPort,
-                      keyboardType: TextInputType.number,
-                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                      decoration: InputDecoration(labelText: l10n.wolFieldPort),
-                    ),
-                  ),
-                ],
-              ),
-            ],
           ],
         ),
       ),
     );
   }
 
-  String? Function(String?) _required(AppLocalizations l10n) =>
-      (value) => (value?.trim().isEmpty ?? true) ? l10n.errorRequired : null;
+  FormFieldValidator<String> _required(AppLocalizations l10n) => (value) {
+    if (value == null || value.trim().isEmpty) return l10n.errorRequired;
+    return null;
+  };
 }
 
-class _SectionLabel extends StatelessWidget {
-  const _SectionLabel({required this.text});
+class _TestResult extends StatelessWidget {
+  const _TestResult({required this.success, required this.text});
 
+  final bool success;
   final String text;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: success
+            ? theme.colorScheme.secondaryContainer
+            : theme.colorScheme.errorContainer,
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: Text(
-        text.toUpperCase(),
-        style: theme.textTheme.labelSmall?.copyWith(
-          color: theme.colorScheme.onSurfaceVariant,
-          letterSpacing: 0.8,
+        text,
+        style: theme.textTheme.bodySmall?.copyWith(
+          color: success
+              ? theme.colorScheme.onSecondaryContainer
+              : theme.colorScheme.onErrorContainer,
         ),
       ),
     );
   }
 }
 
-/// Picks a stored credential, with a shortcut to create one when none exist.
+/// Picks a stored credential, with a shortcut to add one if it is missing.
 class _CredentialPicker extends ConsumerWidget {
   const _CredentialPicker({
     required this.credentials,
@@ -596,7 +441,6 @@ class _CredentialPicker extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
-
     if (credentials.isEmpty && !allowNone) {
       return Card(
         child: ListTile(
@@ -609,13 +453,11 @@ class _CredentialPicker extends ConsumerWidget {
       );
     }
 
-    final validSelection =
-        credentials.any((credential) => credential.id == selectedId)
+    final selected = credentials.any((item) => item.id == selectedId)
         ? selectedId
         : null;
-
     return DropdownButtonFormField<String?>(
-      initialValue: validSelection,
+      initialValue: selected,
       decoration: InputDecoration(labelText: l10n.authSelectCredential),
       items: [
         if (allowNone)

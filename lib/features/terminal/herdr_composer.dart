@@ -6,7 +6,8 @@ import '../../shared/widgets/common.dart';
 import 'terminal_session.dart';
 
 class HerdrComposer extends StatefulWidget {
-  const HerdrComposer({super.key, required this.session});
+  const HerdrComposer({super.key, required this.session, this.compact = false});
+  final bool compact;
   final TerminalSession session;
   @override
   State<HerdrComposer> createState() => _HerdrComposerState();
@@ -82,39 +83,40 @@ class _HerdrComposerState extends State<HerdrComposer> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Row(
-                  children: [
-                    IconButton(
-                      onPressed: session.isLive
-                          ? () => session.scrollHerdr(true)
-                          : null,
-                      tooltip: l10n.herdrScrollUp,
-                      icon: const Icon(Icons.keyboard_arrow_up),
-                    ),
-                    IconButton(
-                      onPressed: session.isLive
-                          ? () => session.scrollHerdr(false)
-                          : null,
-                      tooltip: l10n.herdrScrollDown,
-                      icon: const Icon(Icons.keyboard_arrow_down),
-                    ),
-                    const Spacer(),
-                    IconButton(
-                      onPressed: session.isLive
-                          ? () => session.sendRaw('\x03')
-                          : null,
-                      tooltip: l10n.actionStop,
-                      icon: const Icon(Icons.stop_circle_outlined),
-                    ),
-                    IconButton(
-                      onPressed: session.isLive
-                          ? () => session.sendRaw('\x1b')
-                          : null,
-                      tooltip: l10n.herdrEscape,
-                      icon: const Icon(Icons.keyboard_return),
-                    ),
-                  ],
-                ),
+                if (!widget.compact)
+                  Row(
+                    children: [
+                      IconButton(
+                        onPressed: session.isLive
+                            ? () => session.scrollHerdr(true)
+                            : null,
+                        tooltip: l10n.herdrScrollUp,
+                        icon: const Icon(Icons.keyboard_arrow_up),
+                      ),
+                      IconButton(
+                        onPressed: session.isLive
+                            ? () => session.scrollHerdr(false)
+                            : null,
+                        tooltip: l10n.herdrScrollDown,
+                        icon: const Icon(Icons.keyboard_arrow_down),
+                      ),
+                      const Spacer(),
+                      IconButton(
+                        onPressed: session.isLive
+                            ? () => session.sendRaw('\x03')
+                            : null,
+                        tooltip: l10n.actionStop,
+                        icon: const Icon(Icons.stop_circle_outlined),
+                      ),
+                      IconButton(
+                        onPressed: session.isLive
+                            ? () => session.sendRaw('\x1b')
+                            : null,
+                        tooltip: l10n.herdrEscape,
+                        icon: const Icon(Icons.keyboard_return),
+                      ),
+                    ],
+                  ),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
@@ -123,7 +125,9 @@ class _HerdrComposerState extends State<HerdrComposer> {
                         controller: _text,
                         focusNode: _focus,
                         minLines: 1,
-                        maxLines: MediaQuery.sizeOf(context).height < 500
+                        maxLines:
+                            widget.compact ||
+                                MediaQuery.sizeOf(context).height < 500
                             ? 1
                             : 3,
                         maxLength: 16384,
@@ -145,6 +149,14 @@ class _HerdrComposerState extends State<HerdrComposer> {
                       ),
                     ),
                     const SizedBox(width: 8),
+                    if (widget.compact)
+                      IconButton(
+                        onPressed: session.isLive
+                            ? () => session.sendRaw('\x03')
+                            : null,
+                        tooltip: l10n.actionStop,
+                        icon: const Icon(Icons.stop_circle_outlined),
+                      ),
                     ValueListenableBuilder(
                       valueListenable: _text,
                       builder: (context, value, _) => IconButton.filled(

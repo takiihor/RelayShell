@@ -192,6 +192,17 @@ void main() {
       await _until(() => shell.active == null);
       expect(shell.commands.last.state, ConversationCommandState.interrupted);
       expect((await run('echo still-alive')).output, contains('still-alive'));
+      expect(
+        shell.submit("IFS= read -r answer; printf 'reply:%s\\n' \"\$answer\""),
+        isTrue,
+      );
+      await process.stdin.flush();
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+      expect(shell.sendProcessInput('hello from phone'), isTrue);
+      await process.stdin.flush();
+      await _until(() => shell.active == null);
+      expect(shell.commands.last.output, contains('reply:hello from phone'));
+      expect(shell.ready, isTrue);
     } finally {
       process.stdin.write('exit\n');
       await process.stdin.flush();

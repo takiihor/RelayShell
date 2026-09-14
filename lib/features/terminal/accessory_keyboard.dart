@@ -51,6 +51,7 @@ class AccessoryKeys {
     ),
     'alt': AccessoryKey(id: 'alt', label: 'ALT', isModifier: true),
     'tab': AccessoryKey(id: 'tab', label: 'TAB', sequence: '\t'),
+    'enter': AccessoryKey(id: 'enter', label: 'Enter', sequence: '\r'),
     'up': AccessoryKey(
       id: 'up',
       label: '↑',

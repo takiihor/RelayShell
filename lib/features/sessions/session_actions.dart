@@ -41,7 +41,7 @@ Future<void> openHerdrPane(
     title: pane.title,
   );
   return session.id;
-});
+}, destination: Routes.conversation);
 
 Future<void> openConversationShell(
   BuildContext context,
@@ -92,21 +92,16 @@ Future<void> openHostConversation(
   WidgetRef ref,
   Host host,
 ) async {
-  await _launch(
-    context,
-    ref,
-    () async {
-      final session = await ref
-          .read(sessionLauncherProvider)
-          .openAdditionalHostTerminal(
-            host: host,
-            preferences: ref.read(preferencesProvider),
-            mode: SessionMode.direct,
-          );
-      return session.id;
-    },
-    destination: Routes.conversation,
-  );
+  await _launch(context, ref, () async {
+    final session = await ref
+        .read(sessionLauncherProvider)
+        .openAdditionalHostTerminal(
+          host: host,
+          preferences: ref.read(preferencesProvider),
+          mode: SessionMode.direct,
+        );
+    return session.id;
+  }, destination: Routes.conversation);
 }
 
 /// Opens an additional terminal instead of focusing the existing one.
@@ -191,22 +186,17 @@ Future<void> openProjectConversation(
   }
 
   if (!context.mounted) return;
-  await _launch(
-    context,
-    ref,
-    () async {
-      final session = await ref
-          .read(sessionLauncherProvider)
-          .openProject(
-            project: project,
-            host: host,
-            preferences: ref.read(preferencesProvider),
-            mode: SessionMode.direct,
-          );
-      return session.id;
-    },
-    destination: Routes.conversation,
-  );
+  await _launch(context, ref, () async {
+    final session = await ref
+        .read(sessionLauncherProvider)
+        .openProject(
+          project: project,
+          host: host,
+          preferences: ref.read(preferencesProvider),
+          mode: SessionMode.direct,
+        );
+    return session.id;
+  }, destination: Routes.conversation);
 }
 
 /// Resumes a saved session (SPEC 40.4).

@@ -163,7 +163,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeContinueTitle => 'Continue';
 
   @override
-  String get homeComputersTitle => 'Computers';
+  String get homeComputersTitle => 'Your computers';
+
+  @override
+  String get homeConversationTitle => 'Open a conversation';
+
+  @override
+  String get homeConversationBody =>
+      'Choose a computer to work in its remote shell.';
 
   @override
   String get homeProjectsTitle => 'Projects';
@@ -175,14 +182,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeSeeAll => 'See all';
 
   @override
-  String get homeEmptyTitle => 'Welcome';
+  String get homeEmptyTitle => 'Work from anywhere';
 
   @override
   String get homeEmptyBody =>
-      'Add a computer you can reach over SSH to get started.';
+      'Add the computer you reach through Tailscale or SSH, then open its Conversation Shell.';
 
   @override
-  String get homeAddComputer => 'Add Computer';
+  String get homeAddComputer => 'Add a computer';
 
   @override
   String get statusUnknown => 'Unknown';
@@ -240,22 +247,23 @@ class AppLocalizationsEn extends AppLocalizations {
   String get computersAdd => 'Add Computer';
 
   @override
-  String get computerNew => 'New Computer';
+  String get computerNew => 'Add a computer';
 
   @override
-  String get computerEdit => 'Edit Computer';
+  String get computerEdit => 'Connection settings';
 
   @override
-  String get computerFieldName => 'Name';
+  String get computerFieldName => 'Computer name (optional)';
 
   @override
   String get computerFieldNameHint => 'Home PC';
 
   @override
-  String get computerFieldHostname => 'Hostname or IP';
+  String get computerFieldHostname => 'Tailscale IP or hostname';
 
   @override
-  String get computerFieldHostnameHint => '192.168.1.10 or server.example.com';
+  String get computerFieldHostnameHint =>
+      '100.x.x.x or computer.tailnet.ts.net';
 
   @override
   String get computerFieldPort => 'Port';
@@ -297,6 +305,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get computerSectionWol => 'Wake-on-LAN';
+
+  @override
+  String get computerAdvanced => 'Advanced connection settings';
 
   @override
   String get computerFavorite => 'Pin to Home';
@@ -1614,7 +1625,28 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get conversationOpen => 'Open Shell';
+  String get connectionSetupTitle => 'Connect to your computer';
+
+  @override
+  String get connectionSetupBody =>
+      'Use the Tailscale address when you are away from your PC. SSH uses port 22 unless you change it below.';
+
+  @override
+  String get conversationOpen => 'Open Conversation';
+
+  @override
+  String get conversationReadyTitle => 'Ready to work';
+
+  @override
+  String conversationReadyBody(String computer) {
+    return 'Run a command on $computer. Commands and output stay together here.';
+  }
+
+  @override
+  String get herdrLiveOutput => 'Live pane output';
+
+  @override
+  String get herdrWaitingOutput => 'Waiting for output from this pane…';
 
   @override
   String get herdrPanes => 'Herdr panes';
@@ -1673,8 +1705,14 @@ class AppLocalizationsEn extends AppLocalizations {
       'Shell framing is unavailable. Open Terminal to inspect or reconnect for a fresh shell.';
 
   @override
+  String get conversationSendInput => 'Send input';
+
+  @override
+  String get conversationProcessInput => 'Input to running process';
+
+  @override
   String get conversationRunningHint =>
-      'Running. You can draft the next command. Use Terminal if input is needed.';
+      'Process active. Send input below, or open Terminal for full keyboard control.';
 
   @override
   String get conversationRunning => 'Running';

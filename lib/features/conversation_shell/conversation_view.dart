@@ -18,9 +18,11 @@ class ConversationView extends StatefulWidget {
     super.key,
     required this.session,
     required this.onTerminal,
+    this.onHerdr,
   });
   final TerminalSession session;
   final VoidCallback onTerminal;
+  final VoidCallback? onHerdr;
 
   @override
   State<ConversationView> createState() => _ConversationViewState();
@@ -96,8 +98,17 @@ class _ConversationViewState extends State<ConversationView> {
     if (_input.value.composing.isValid && !_input.value.composing.isCollapsed) {
       return;
     }
+    if (conversation.ready &&
+        _input.text.trim() == 'herdr' &&
+        widget.onHerdr != null) {
+      _focus.unfocus();
+      widget.onHerdr!();
+      return;
+    }
     try {
-      if (conversation.submit(_input.text)) {
+      if (conversation.active != null
+          ? conversation.sendProcessInput(_input.text)
+          : conversation.submit(_input.text)) {
         _input.clear();
         _historyIndex = null;
         _follow = true;
@@ -140,6 +151,8 @@ class _ConversationViewState extends State<ConversationView> {
     final theme = Theme.of(context);
     final active = conversation.active;
     final canSubmit = conversation.ready && widget.session.isLive;
+    final canSendInput =
+        active != null && !conversation.unavailable && widget.session.isLive;
     return LayoutBuilder(
       builder: (context, constraints) {
         final compact =
@@ -327,7 +340,9 @@ class _ConversationViewState extends State<ConversationView> {
                                   fontSize: 16,
                                 ),
                                 decoration: InputDecoration(
-                                  labelText: l10n.conversationCommand,
+                                  labelText: canSendInput
+                                      ? l10n.conversationProcessInput
+                                      : l10n.conversationCommand,
                                   counterText: '',
                                   border: const OutlineInputBorder(),
                                 ),
@@ -338,10 +353,13 @@ class _ConversationViewState extends State<ConversationView> {
                               valueListenable: _input,
                               builder: (context, value, _) => IconButton.filled(
                                 onPressed:
-                                    canSubmit && value.text.trim().isNotEmpty
+                                    (canSubmit || canSendInput) &&
+                                        value.text.trim().isNotEmpty
                                     ? _submit
                                     : null,
-                                tooltip: l10n.actionRun,
+                                tooltip: canSendInput
+                                    ? l10n.conversationSendInput
+                                    : l10n.actionRun,
                                 icon: const Icon(Icons.send),
                                 constraints: const BoxConstraints(
                                   minWidth: 48,
@@ -388,11 +406,8 @@ class _ConversationViewState extends State<ConversationView> {
     final statusColor = switch (entry.state) {
       ConversationCommandState.running => context.statusColors.connecting,
       ConversationCommandState.interrupted ||
-      ConversationCommandState.unknown =>
-        context.statusColors.warning,
-      ConversationCommandState.completed when (
-        entry.exitCode ?? 0
-      ) != 0 =>
+      ConversationCommandState.unknown => context.statusColors.warning,
+      ConversationCommandState.completed when (entry.exitCode ?? 0) != 0 =>
         context.statusColors.error,
       _ => theme.colorScheme.onSurfaceVariant,
     };

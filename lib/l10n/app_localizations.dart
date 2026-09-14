@@ -403,8 +403,20 @@ abstract class AppLocalizations {
   /// No description provided for @homeComputersTitle.
   ///
   /// In en, this message translates to:
-  /// **'Computers'**
+  /// **'Your computers'**
   String get homeComputersTitle;
+
+  /// No description provided for @homeConversationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Open a conversation'**
+  String get homeConversationTitle;
+
+  /// No description provided for @homeConversationBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a computer to work in its remote shell.'**
+  String get homeConversationBody;
 
   /// No description provided for @homeProjectsTitle.
   ///
@@ -427,19 +439,19 @@ abstract class AppLocalizations {
   /// No description provided for @homeEmptyTitle.
   ///
   /// In en, this message translates to:
-  /// **'Welcome'**
+  /// **'Work from anywhere'**
   String get homeEmptyTitle;
 
   /// No description provided for @homeEmptyBody.
   ///
   /// In en, this message translates to:
-  /// **'Add a computer you can reach over SSH to get started.'**
+  /// **'Add the computer you reach through Tailscale or SSH, then open its Conversation Shell.'**
   String get homeEmptyBody;
 
   /// No description provided for @homeAddComputer.
   ///
   /// In en, this message translates to:
-  /// **'Add Computer'**
+  /// **'Add a computer'**
   String get homeAddComputer;
 
   /// No description provided for @statusUnknown.
@@ -553,19 +565,19 @@ abstract class AppLocalizations {
   /// No description provided for @computerNew.
   ///
   /// In en, this message translates to:
-  /// **'New Computer'**
+  /// **'Add a computer'**
   String get computerNew;
 
   /// No description provided for @computerEdit.
   ///
   /// In en, this message translates to:
-  /// **'Edit Computer'**
+  /// **'Connection settings'**
   String get computerEdit;
 
   /// No description provided for @computerFieldName.
   ///
   /// In en, this message translates to:
-  /// **'Name'**
+  /// **'Computer name (optional)'**
   String get computerFieldName;
 
   /// No description provided for @computerFieldNameHint.
@@ -577,13 +589,13 @@ abstract class AppLocalizations {
   /// No description provided for @computerFieldHostname.
   ///
   /// In en, this message translates to:
-  /// **'Hostname or IP'**
+  /// **'Tailscale IP or hostname'**
   String get computerFieldHostname;
 
   /// No description provided for @computerFieldHostnameHint.
   ///
   /// In en, this message translates to:
-  /// **'192.168.1.10 or server.example.com'**
+  /// **'100.x.x.x or computer.tailnet.ts.net'**
   String get computerFieldHostnameHint;
 
   /// No description provided for @computerFieldPort.
@@ -663,6 +675,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Wake-on-LAN'**
   String get computerSectionWol;
+
+  /// No description provided for @computerAdvanced.
+  ///
+  /// In en, this message translates to:
+  /// **'Advanced connection settings'**
+  String get computerAdvanced;
 
   /// No description provided for @computerFavorite.
   ///
@@ -2966,11 +2984,47 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{1 hour ago} other{{count} hours ago}}'**
   String timeHoursAgo(int count);
 
+  /// No description provided for @connectionSetupTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect to your computer'**
+  String get connectionSetupTitle;
+
+  /// No description provided for @connectionSetupBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Use the Tailscale address when you are away from your PC. SSH uses port 22 unless you change it below.'**
+  String get connectionSetupBody;
+
   /// No description provided for @conversationOpen.
   ///
   /// In en, this message translates to:
-  /// **'Open Shell'**
+  /// **'Open Conversation'**
   String get conversationOpen;
+
+  /// No description provided for @conversationReadyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready to work'**
+  String get conversationReadyTitle;
+
+  /// No description provided for @conversationReadyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Run a command on {computer}. Commands and output stay together here.'**
+  String conversationReadyBody(String computer);
+
+  /// No description provided for @herdrLiveOutput.
+  ///
+  /// In en, this message translates to:
+  /// **'Live pane output'**
+  String get herdrLiveOutput;
+
+  /// No description provided for @herdrWaitingOutput.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for output from this pane…'**
+  String get herdrWaitingOutput;
 
   /// No description provided for @herdrPanes.
   ///
@@ -3074,10 +3128,22 @@ abstract class AppLocalizations {
   /// **'Shell framing is unavailable. Open Terminal to inspect or reconnect for a fresh shell.'**
   String get conversationUnavailable;
 
+  /// No description provided for @conversationSendInput.
+  ///
+  /// In en, this message translates to:
+  /// **'Send input'**
+  String get conversationSendInput;
+
+  /// No description provided for @conversationProcessInput.
+  ///
+  /// In en, this message translates to:
+  /// **'Input to running process'**
+  String get conversationProcessInput;
+
   /// No description provided for @conversationRunningHint.
   ///
   /// In en, this message translates to:
-  /// **'Running. You can draft the next command. Use Terminal if input is needed.'**
+  /// **'Process active. Send input below, or open Terminal for full keyboard control.'**
   String get conversationRunningHint;
 
   /// No description provided for @conversationRunning.

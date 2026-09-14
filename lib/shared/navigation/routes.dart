@@ -17,17 +17,17 @@ class Routes {
   static String projectEdit(String id) => '/projects/$id/edit';
 
   static const String sessions = '/sessions';
-  static const String more = '/more';
+  static const String more = '/settings';
 
-  static const String commands = '/more/commands';
-  static const String commandNew = '/more/commands/new';
-  static String commandEdit(String id) => '/more/commands/$id';
+  static const String commands = '/settings/commands';
+  static const String commandNew = '/settings/commands/new';
+  static String commandEdit(String id) => '/settings/commands/$id';
 
-  static const String keys = '/more/keys';
-  static const String forwarding = '/more/forwarding';
-  static const String settings = '/more/settings';
-  static const String trustedKeys = '/more/settings/trusted-keys';
-  static const String about = '/more/about';
+  static const String keys = '/settings/keys';
+  static const String forwarding = '/settings/forwarding';
+  static const String settings = '/settings';
+  static const String trustedKeys = '/settings/trusted-keys';
+  static const String about = '/settings/about';
 
   static const String search = '/search';
   static const String conversation = '/conversation';

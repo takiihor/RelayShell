@@ -30,6 +30,7 @@ class Routes {
   static const String about = '/more/about';
 
   static const String search = '/search';
+  static const String conversation = '/conversation';
   static const String terminal = '/terminal';
 
   static String files(String hostId) => '/files/$hostId';

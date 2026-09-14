@@ -87,6 +87,16 @@ class TerminalSession extends ChangeNotifier {
   bool _herdrAttached = false;
   bool _intentionalDetach = false;
 
+  /// Presentation-neutral copy of remote PTY output.
+  ///
+  /// Terminal Mode continues to consume the xterm buffer, while Conversation
+  /// Mode subscribes here to frame the same bytes into command/output blocks.
+  /// This is a broadcast stream because opening a second presentation must not
+  /// steal output from the terminal emulator.
+  final StreamController<String> _outputController =
+      StreamController<String>.broadcast();
+  Stream<String> get outputStream => _outputController.stream;
+
   TerminalSessionState _state = TerminalSessionState.starting;
   TerminalSessionState get state => _state;
 
@@ -315,6 +325,7 @@ class TerminalSession extends ChangeNotifier {
   void _writeToTerminal(String data) {
     terminal.write(data);
     conversation?.addOutput(data);
+    if (!_outputController.isClosed) _outputController.add(data);
   }
 
   Future<void> _watchShellExit(SSHSession shell) async {
@@ -529,6 +540,7 @@ class TerminalSession extends ChangeNotifier {
     unawaited(_connectionStatus?.cancel());
     unawaited(_stdout?.cancel());
     unawaited(_stderr?.cancel());
+    unawaited(_outputController.close());
     _shell?.close();
     controller.dispose();
     inputModifiers.dispose();

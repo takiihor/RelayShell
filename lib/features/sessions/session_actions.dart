@@ -78,6 +78,37 @@ Future<void> openHostTerminal(
   });
 }
 
+/// Opens the mobile-first Conversation Mode over a fresh direct shell PTY.
+///
+/// Conversation framing requires a known shell prompt. A host whose persistent
+/// backend is Herdr would otherwise launch straight into the Herdr TUI and the
+/// framing protocol would be typed into that interface. Conversation therefore
+/// always starts from an isolated direct shell. The user can then run `herdr`,
+/// Codex, Claude, Pi or another interactive command inside it; once that process
+/// is active, the Conversation composer and accessory keyboard talk directly to
+/// the same foreground PTY.
+Future<void> openHostConversation(
+  BuildContext context,
+  WidgetRef ref,
+  Host host,
+) async {
+  await _launch(
+    context,
+    ref,
+    () async {
+      final session = await ref
+          .read(sessionLauncherProvider)
+          .openAdditionalHostTerminal(
+            host: host,
+            preferences: ref.read(preferencesProvider),
+            mode: SessionMode.direct,
+          );
+      return session.id;
+    },
+    destination: Routes.conversation,
+  );
+}
+
 /// Opens an additional terminal instead of focusing the existing one.
 Future<void> openAdditionalHostTerminal(
   BuildContext context,
@@ -97,7 +128,8 @@ Future<void> openAdditionalHostTerminal(
   });
 }
 
-/// Opens [project] at its remote path, optionally running an action.
+/// Opens [project] at its remote path (SPEC 12.3, 40.3), optionally running an
+/// action.
 Future<void> openProjectTerminal(
   BuildContext context,
   WidgetRef ref,
@@ -132,6 +164,49 @@ Future<void> openProjectTerminal(
         );
     return session.id;
   });
+}
+
+/// Opens a project directly in Conversation Mode at its configured directory.
+///
+/// As with host Conversation Mode, this intentionally uses a direct shell even
+/// when the project's default is tmux or Herdr. A configured persistent session
+/// may already be running a full-screen agent/TUI, which is not a safe place to
+/// inject Conversation framing. Interactive tools launched after the clean shell
+/// opens still receive stdin and terminal shortcuts through the same PTY.
+Future<void> openProjectConversation(
+  BuildContext context,
+  WidgetRef ref,
+  Project project,
+) async {
+  final host = await ref.read(hostsRepositoryProvider).byId(project.hostId);
+  if (host == null) {
+    if (context.mounted) {
+      showMessage(
+        context,
+        AppLocalizations.of(context).errorNoHosts,
+        isError: true,
+      );
+    }
+    return;
+  }
+
+  if (!context.mounted) return;
+  await _launch(
+    context,
+    ref,
+    () async {
+      final session = await ref
+          .read(sessionLauncherProvider)
+          .openProject(
+            project: project,
+            host: host,
+            preferences: ref.read(preferencesProvider),
+            mode: SessionMode.direct,
+          );
+      return session.id;
+    },
+    destination: Routes.conversation,
+  );
 }
 
 /// Resumes a saved session (SPEC 40.4).
@@ -195,8 +270,9 @@ Future<void> attachTmuxSession(
 Future<void> _launch(
   BuildContext context,
   WidgetRef ref,
-  Future<String> Function() action,
-) async {
+  Future<String> Function() action, {
+  String destination = Routes.terminal,
+}) async {
   final navigator = Navigator.of(context, rootNavigator: true);
   var dialogOpen = true;
 
@@ -209,7 +285,7 @@ Future<void> _launch(
 
     if (!context.mounted) return;
     ref.read(terminalManagerProvider).setActive(sessionId);
-    context.push('${Routes.terminal}?session=$sessionId');
+    context.push('$destination?session=$sessionId');
   } on SshFailure catch (failure) {
     if (dialogOpen && navigator.canPop()) navigator.pop();
     dialogOpen = false;

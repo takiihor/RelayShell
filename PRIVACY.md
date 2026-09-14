@@ -1,22 +1,17 @@
-# RelayShell privacy policy
+# RelayShell Privacy Policy
 
-Last updated: 25 August 2026
+RelayShell connects directly from your device to computers and servers that you configure over SSH.
 
-RelayShell is a local SSH client. It has no user account, relay service,
-analytics SDK, advertising SDK, or developer-operated server.
+RelayShell does not require a RelayShell account, does not operate a relay service for SSH traffic, and does not send your terminal commands or remote terminal output to an AI service as part of normal operation.
 
-The app stores computers, projects, terminal preferences, commands, and session
-metadata on the device. SSH passwords, private keys, and passphrases are stored
-only in the operating system's secure credential storage. Terminal output and
-remote files travel directly between the device and the computer chosen by the
-user; RelayShell does not receive a copy.
+Conversation Mode is a local presentation of your SSH shell. Commands, interactive-process input, terminal control keys, and remote output travel between your device and your configured SSH computer. Conversation Mode does not use an LLM unless a future, separately labelled AI feature is explicitly invoked by the user.
 
-Configuration export intentionally excludes passwords, private keys, and
-passphrases. Exported configuration remains a user-controlled file and should
-still be handled carefully because it can contain host names, user names,
-project paths, and command text.
+Credentials such as private keys, passwords, and passphrases are stored using the device platform's secure storage facilities. RelayShell configuration exports do not include those credentials.
 
-Removing the app or using its Reset App action removes local application data.
-Users can remove stored credentials and trusted host keys from Settings. For a
-privacy question or request, contact the publisher through the support address
-listed with the store release.
+The app may store non-secret configuration such as computer names, hostnames, projects, saved commands, session shortcuts, preferences, and trusted host fingerprints locally on the device. Conversation presentation history is local; the initial implementation keeps it in memory only.
+
+RelayShell does not sell personal data and does not include advertising or third-party behavioral tracking in the application.
+
+Remote computers and services that you choose to access may have their own logging, data collection, or privacy practices. RelayShell does not control those systems.
+
+If this policy changes for a future feature that transmits data to an external service, that feature must identify the transmission and its purpose rather than silently changing the direct-SSH behavior described above.

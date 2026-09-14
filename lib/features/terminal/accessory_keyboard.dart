@@ -30,7 +30,8 @@ class AccessoryKey {
 /// The catalogue of keys a user can put on their rows.
 ///
 /// Sequences are the real terminal escape codes rather than approximations,
-/// because vim, tmux and interactive CLIs all distinguish them precisely.
+/// because vim, tmux, Herdr and interactive coding CLIs distinguish them
+/// precisely.
 class AccessoryKeys {
   const AccessoryKeys._();
 
@@ -41,6 +42,12 @@ class AccessoryKeys {
       label: 'CTRL',
       isModifier: true,
       width: 1.3,
+    ),
+    'shift': AccessoryKey(
+      id: 'shift',
+      label: 'SHIFT',
+      isModifier: true,
+      width: 1.35,
     ),
     'alt': AccessoryKey(id: 'alt', label: 'ALT', isModifier: true),
     'tab': AccessoryKey(id: 'tab', label: 'TAB', sequence: '\t'),
@@ -162,8 +169,8 @@ class AccessoryKeys {
 /// The accessory key row above the keyboard (SPEC 10.3, 10.4).
 ///
 /// Modifiers arm on tap and lock on long-press, with a visible difference
-/// between the two — a locked CTRL that looks the same as an armed one is how
-/// users end up sending `^X` to a shell they meant to type in.
+/// between the two — a locked CTRL/ALT/SHIFT that looks the same as an armed
+/// one is how users end up sending the wrong sequence to an interactive CLI.
 class AccessoryKeyboard extends StatefulWidget {
   const AccessoryKeyboard({
     required this.rows,
@@ -171,6 +178,7 @@ class AccessoryKeyboard extends StatefulWidget {
     required this.modifiers,
     super.key,
     this.haptics = true,
+    this.safeAreaBottom = true,
   });
 
   final List<List<String>> rows;
@@ -181,6 +189,11 @@ class AccessoryKeyboard extends StatefulWidget {
   final TerminalInputModifiers modifiers;
 
   final bool haptics;
+
+  /// Terminal Mode sits at the bottom edge and needs the system inset. A
+  /// Conversation accessory row sits above its composer, whose SafeArea already
+  /// owns that inset, so it disables this to avoid a visible double gap.
+  final bool safeAreaBottom;
 
   @override
   State<AccessoryKeyboard> createState() => _AccessoryKeyboardState();
@@ -213,19 +226,25 @@ class _AccessoryKeyboardState extends State<AccessoryKeyboard> {
 
   void _tapModifier(String id) {
     _feedback();
-    if (id == 'ctrl') {
-      widget.modifiers.tapControl();
-    } else {
-      widget.modifiers.tapAlt();
+    switch (id) {
+      case 'ctrl':
+        widget.modifiers.tapControl();
+      case 'alt':
+        widget.modifiers.tapAlt();
+      case 'shift':
+        widget.modifiers.tapShift();
     }
   }
 
   void _lockModifier(String id) {
     _feedback(heavy: true);
-    if (id == 'ctrl') {
-      widget.modifiers.lockControl();
-    } else {
-      widget.modifiers.lockAlt();
+    switch (id) {
+      case 'ctrl':
+        widget.modifiers.lockControl();
+      case 'alt':
+        widget.modifiers.lockAlt();
+      case 'shift':
+        widget.modifiers.lockShift();
     }
   }
 
@@ -257,6 +276,7 @@ class _AccessoryKeyboardState extends State<AccessoryKeyboard> {
       ),
       child: SafeArea(
         top: false,
+        bottom: widget.safeAreaBottom,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -275,11 +295,12 @@ class _AccessoryKeyboardState extends State<AccessoryKeyboard> {
                         if (AccessoryKeys.byId(id) case final key?)
                           _KeyButton(
                             accessoryKey: key,
-                            state: key.id == 'ctrl'
-                                ? widget.modifiers.control
-                                : key.id == 'alt'
-                                ? widget.modifiers.alt
-                                : ModifierState.off,
+                            state: switch (key.id) {
+                              'ctrl' => widget.modifiers.control,
+                              'alt' => widget.modifiers.alt,
+                              'shift' => widget.modifiers.shift,
+                              _ => ModifierState.off,
+                            },
                             onTap: () => key.isModifier
                                 ? _tapModifier(key.id)
                                 : _send(key.sequence ?? ''),
